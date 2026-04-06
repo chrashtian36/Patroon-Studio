@@ -100,6 +100,13 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:24px;heigh
 .step-title{font-size:1rem;font-weight:700;margin-bottom:6px}
 .step-desc{font-size:.84rem;line-height:1.55;color:#4a4540}
 .step-tip{margin-top:10px;padding:9px 12px;background:#f0f5f1;border-radius:8px;font-size:.78rem;color:#3a7a50;line-height:1.4}
+.step-elab{margin-top:10px;padding:10px 14px;border:1.5px solid var(--warm);border-radius:10px;background:#fff;font-size:.82rem;font-weight:600;color:var(--rust);cursor:pointer;width:100%;text-align:center}
+.step-elab:active{opacity:.7}
+.step-elab:disabled{opacity:.5;cursor:not-allowed}
+.step-subs{margin-top:10px;padding:0;list-style:none;counter-reset:sub}
+.step-subs li{position:relative;padding:8px 0 8px 28px;border-bottom:1px solid var(--light);font-size:.82rem;line-height:1.5;color:#4a4540}
+.step-subs li:last-child{border-bottom:none}
+.step-subs li::before{counter-increment:sub;content:counter(sub);position:absolute;left:0;top:8px;width:20px;height:20px;border-radius:50%;background:var(--rust);color:#fff;font-size:.65rem;font-weight:800;text-align:center;line-height:20px}
 .step-loading{padding:24px;text-align:center;color:#9a9590;font-size:.86rem}
 .stof-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;padding:14px 16px}
 .stof-cell{background:var(--cream);border-radius:10px;padding:12px;text-align:center}
@@ -1004,10 +1011,44 @@ async function buildSteps() {
     drawFn(ctx2, W, H);
     card.appendChild(cv2);
     card.insertAdjacentHTML('beforeend',
-      '<div class="step-body"><div class="step-num">Stap '+(i+1)+'</div><div class="step-title">'+step.title+'</div><div class="step-desc">'+step.desc+'</div><div class="step-tip">&#x1F4A1; '+step.tip+'</div></div>'
+      '<div class="step-body"><div class="step-num">Stap '+(i+1)+'</div><div class="step-title">'+step.title+'</div><div class="step-desc">'+step.desc+'</div><div class="step-tip">&#x1F4A1; '+step.tip+'</div><button class="step-elab" onclick="elaborateStep(this,'+i+')">🔍 Meer detail</button><div class="step-subs-wrap"></div></div>'
     );
     list.appendChild(card);
   });
+}
+
+async function elaborateStep(btn, stepIdx) {
+  const card = btn.closest('.step');
+  const title = card.querySelector('.step-title').textContent;
+  const desc = card.querySelector('.step-desc').textContent;
+  const wrap = card.querySelector('.step-subs-wrap');
+  // Toggle: if already elaborated, show/hide
+  if (wrap.innerHTML) {
+    wrap.style.display = wrap.style.display === 'none' ? 'block' : 'none';
+    btn.textContent = wrap.style.display === 'none' ? '🔍 Meer detail' : '▲ Minder detail';
+    return;
+  }
+  btn.disabled = true; btn.innerHTML = '<span class="spin"></span> Uitwerken…';
+  const g = currentGarment;
+  const name = SHIRT_LABEL[g] || g.charAt(0).toUpperCase()+g.slice(1);
+  const refCtx = patternRef ? ' (basispatroon: ' + patternRef.naam + ')' : '';
+  try {
+    const prompt = 'Je helpt iemand een ' + name + refCtx + ' naaien. Ze zijn bij deze stap:\n\nStap ' + (stepIdx+1) + ': ' + title + '\n' + desc + '\n\nWerk deze stap uit in 4-8 concrete substappen. Per substap: 1-2 zinnen met exacte handeling, afstanden in cm/mm, hoe vast te spelden, waar op te letten. Wees heel specifiek en praktisch.\n\nJSON zonder markdown:\n[{"sub":"substap beschrijving"},...]';
+    const raw = await callAI([{role:'user', content:prompt}]);
+    if (raw) {
+      const parsed = JSON.parse(raw.replace(/```json|```/g,'').trim());
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        wrap.innerHTML = '<ol class="step-subs">' + parsed.map(s => '<li>' + (s.sub||s.beschrijving||s.text||JSON.stringify(s)) + '</li>').join('') + '</ol>';
+        btn.textContent = '▲ Minder detail';
+        btn.disabled = false;
+        return;
+      }
+    }
+    wrap.innerHTML = '<div class="step-tip" style="margin-top:10px">Geen extra detail beschikbaar.</div>';
+  } catch(e) {
+    wrap.innerHTML = '<div class="step-tip" style="background:#fde8e8;color:#a33">Fout: ' + e.message + '</div>';
+  }
+  btn.textContent = '🔍 Meer detail'; btn.disabled = false;
 }
 
 // ─── Print & Export ──────────────────────────────────────
