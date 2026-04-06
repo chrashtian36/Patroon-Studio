@@ -498,6 +498,73 @@ function clearRef() {
   toast('Basispatroon gewist');
 }
 
+// ─── Style field mapping & application ───────────────────
+const STYLE_MAP = {
+  broek: {
+    pijpwijdte: {id:'legWidth', type:'range', display:'lwD', suffix:' cm'},
+    tailleband: {id:'waistband', type:'number'},
+    sluiting:   {id:'sl-broek', type:'pill'}
+  },
+  rok: {
+    silhouet:  {id:'r_flare', type:'range', display:'rsilD', displayFn: v => v==0?'Koker':v<8?'Licht A-lijn':v<16?'A-lijn':'Wijde rok'},
+    roklengte: {id:'r_len', type:'number'},
+    sluiting:  {id:'sl-rok', type:'pill'}
+  },
+  shirt: {
+    pasvorm:    {id:'s_ease', type:'range', display:'sfitD', displayFn: v => v<=6?'Slim':v<=12?'Regular':v<=16?'Relaxed':'Oversized'},
+    mouwlengte: {id:'s_sleeve', type:'number'},
+    sluiting:   {id:'sl-shirt', type:'pill'}
+  },
+  jurk: {
+    mouwlengte: {id:'j_sleeve', type:'number'},
+    roklengte:  {id:'j_total', type:'number'},
+    sluiting:   {id:'sl-jurk', type:'pill'}
+  }
+};
+
+function applyStyleFields(garmentKey, data) {
+  if (!data || typeof data !== 'object') return;
+  const map = STYLE_MAP[garmentKey];
+  if (!map) return;
+  const applied = [];
+  for (const [key, val] of Object.entries(data)) {
+    const cfg = map[key];
+    if (!cfg || val === null || val === undefined || val === '') continue;
+    if (cfg.type === 'pill') {
+      // Find best matching pill by data-val
+      const pills = document.querySelectorAll('#'+cfg.id+' .pill');
+      let best = null, bestScore = 0;
+      const search = String(val).toLowerCase();
+      pills.forEach(p => {
+        const dv = (p.dataset.val||'').toLowerCase();
+        // Score: exact match > includes > word overlap
+        if (dv === search) { best = p; bestScore = 100; }
+        else if (bestScore < 50 && (dv.includes(search) || search.includes(dv))) { best = p; bestScore = 50; }
+        else if (bestScore < 10) {
+          const overlap = search.split(/\s+/).filter(w => dv.includes(w)).length;
+          if (overlap > bestScore) { best = p; bestScore = overlap; }
+        }
+      });
+      if (best) {
+        pills.forEach(p => p.classList.remove('active'));
+        best.classList.add('active');
+        applied.push(key + ': ' + best.dataset.val);
+      }
+    } else {
+      const el = document.getElementById(cfg.id);
+      if (!el) continue;
+      el.value = val;
+      // Update display label for range sliders
+      if (cfg.display) {
+        const disp = document.getElementById(cfg.display);
+        if (disp) disp.textContent = cfg.displayFn ? cfg.displayFn(Number(val)) : val + (cfg.suffix||'');
+      }
+      applied.push(key + ': ' + val);
+    }
+  }
+  return applied;
+}
+
 // ─── File upload ─────────────────────────────────────────
 function handleFile(input) {
   const file = input.files[0]; if (!file) return;
@@ -583,20 +650,27 @@ async function lookupPnr() {
   const btn = document.getElementById('pnrBtn');
   btn.innerHTML = '<span class="spin"></span>'; btn.disabled = true;
   try {
-    const r = await callJSON('Info over naaipatroon "'+val+'". Geef het kledingstuktype dat het dichtst bij een van deze opties past: broek, rok, tshirt, polo, blouse, trui, vest, jurk.\n\nJSON zonder markdown:\n{"naam":"volledige naam","merk":"merknaam","type":"een van: broek/rok/tshirt/polo/blouse/trui/vest/jurk","stijl":"max 5 woorden (bv. A-lijn, slim fit)","moeilijkheid":"Beginner/Gevorderd/Expert","stof_tips":"max 8 woorden","maatadvies":"max 1 zin over welke maten extra belangrijk zijn","aanpassingen":["aanpassing 1","aanpassing 2"]}');
+    const styleGuide = 'Geef ook stijlvelden als object. Beschikbare velden per type:\n- broek: pijpwijdte (getal 14-50 cm), tailleband (getal cm), sluiting (onzichtbare rits / jeans rits / knoop en knoopsgat / elastiek in tailleband)\n- rok: silhouet (getal 0=koker, 8=A-lijn, 20=wijd), roklengte (getal cm), sluiting (onzichtbare rits middenachter / reguliere rits zijkant / elastiek in tailleband / knopen opzij)\n- shirt (tshirt/polo/blouse/trui/vest): pasvorm (getal 4=slim, 10=regular, 16=relaxed, 20=oversized), mouwlengte (getal cm), sluiting (jersey boord van ribstof / biaisband afwerking hals / v-hals afgewerkt met biaisband)\n- jurk: mouwlengte (getal cm, 0=mouwloos), roklengte (getal cm totale jurklengte), sluiting (onzichtbare rits middenachter / reguliere rits zijkant / knopen middenachter / elastiek in taille)';
+    const r = await callJSON('Info over naaipatroon "'+val+'". Geef het kledingstuktype (broek/rok/tshirt/polo/blouse/trui/vest/jurk). '+styleGuide+'\n\nJSON zonder markdown:\n{"naam":"volledige naam","merk":"merknaam","type":"een van: broek/rok/tshirt/polo/blouse/trui/vest/jurk","stijl":"max 5 woorden","moeilijkheid":"Beginner/Gevorderd/Expert","stijl_velden":{"veldnaam":"waarde"},"aanpassingen":["aanpassing 1","aanpassing 2"]}');
     if (!r) return;
     const GNAMES = {broek:'Broek',rok:'Rok',tshirt:'T-shirt',polo:'Polo',blouse:'Blouse',trui:'Trui',vest:'Vest',jurk:'Jurk'};
     const garmentType = r.type && GARMENT_GROUP[r.type] ? r.type : null;
     // Short verification text
     document.getElementById('pnrTxt').innerHTML = '<strong>'+(r.naam||val)+'</strong>'+(r.merk?' — '+r.merk:'')+(garmentType?' · '+GNAMES[garmentType]:'')+(r.stijl?' · '+r.stijl:'')+(r.moeilijkheid?' · ⭐ '+r.moeilijkheid:'');
     const chips = document.getElementById('pnrChips'); chips.innerHTML='';
-    // Auto-link pattern: store ref + select garment + go to maten
+    // Auto-link pattern: store ref + select garment + apply style fields
     if (garmentType) {
-      patternRef = { naam: r.naam||val, merk: r.merk||'', type: garmentType, stijl: r.stijl||'', beschrijving: '', moeilijkheid: r.moeilijkheid||'', stof_tips: r.stof_tips||'', maatadvies: r.maatadvies||'', aanpassingen: r.aanpassingen||[] };
+      patternRef = { naam: r.naam||val, merk: r.merk||'', type: garmentType, stijl: r.stijl||'', beschrijving: '', moeilijkheid: r.moeilijkheid||'', stof_tips: '', maatadvies: '', aanpassingen: r.aanpassingen||[], stijl_velden: r.stijl_velden||{} };
       const el = document.getElementById('g-'+garmentType);
       if (el) pickGarment(garmentType, el);
+      // Apply style fields from AI
+      const drawKey = GARMENT_GROUP[garmentType];
+      const applied = applyStyleFields(drawKey, r.stijl_velden);
       updateRefBanner();
-      toast('Gekoppeld als '+GNAMES[garmentType]+' — vul je maten in');
+      if (applied && applied.length) {
+        document.getElementById('pnrTxt').innerHTML += '<br><small style="color:var(--sage)">Ingesteld: ' + applied.join(', ') + '</small>';
+      }
+      toast('Gekoppeld als '+GNAMES[garmentType]+' — stijl ingevuld');
     }
     (r.aanpassingen||[]).forEach(a=>addChip(chips, a, '', ()=>{document.getElementById('adjInp').value='Aanpassing op '+(r.naam||val)+': '+a; goTab('start'); toast('Ingevuld bij aanpassingen');}));
     if (!garmentType) addChip(chips, '→ Naar maten', 'go', ()=>goTab('maten'));
@@ -612,10 +686,26 @@ async function getAdj() {
   btn.innerHTML = '<span class="spin"></span> Denken…'; btn.disabled = true;
   try {
     const pnr = document.getElementById('pnrInp').value.trim();
-    const refCtx = patternRef ? 'Basispatroon: ' + patternRef.naam + (patternRef.stijl ? ' (' + patternRef.stijl + ')' : '') + '. ' : (pnr ? 'Patroon: ' + pnr + '. ' : '');
-    const text = await callAI([{role:'user', content:refCtx+'Aanpassing: "'+val+'". Praktisch naai-advies in max 4 alineas. Bespreek: wat toe te voegen of weg te laten, welke maten veranderen, valkuilen.'}]);
-    if (!text) return;
-    document.getElementById('adjTxt').textContent = text;
+    const refCtx = patternRef ? 'Basispatroon: ' + patternRef.naam + (patternRef.stijl ? ' (' + patternRef.stijl + ')' : '') + '. Type: ' + patternRef.type + '. ' : (pnr ? 'Patroon: ' + pnr + '. ' : '');
+    const g = currentGarment;
+    const drawKey = GARMENT_GROUP[g] || g;
+    const fields = STYLE_MAP[drawKey];
+    const fieldDesc = fields ? Object.entries(fields).map(([k,v]) => k + (v.type==='pill' ? ' (tekst)' : ' (getal)')).join(', ') : '';
+    const r = await callJSON(refCtx + 'Aanpassing: "' + val + '". Geef kort praktisch naai-advies (max 3 alineas) EN geef aan welke stijlvelden moeten veranderen.\n\nBeschikbare velden voor ' + drawKey + ': ' + fieldDesc + '\n\nJSON zonder markdown:\n{"advies":"praktisch advies tekst, max 3 alineas","velden":{' + (fields ? Object.keys(fields).map(k => '"'+k+'":"nieuwe waarde of null als ongewijzigd"').join(',') : '') + '}}');
+    if (!r) return;
+    const advies = r.advies || r.raw || '';
+    document.getElementById('adjTxt').textContent = advies;
+    // Apply field changes from AI
+    if (r.velden) {
+      // Filter out null/unchanged values
+      const changes = {};
+      for (const [k,v] of Object.entries(r.velden)) { if (v !== null && v !== 'null' && v !== '') changes[k] = v; }
+      const applied = applyStyleFields(drawKey, changes);
+      if (applied && applied.length) {
+        document.getElementById('adjTxt').textContent += '\n\n✂️ Aangepast: ' + applied.join(', ');
+        if (patternRef) patternRef.stijl_velden = {...(patternRef.stijl_velden||{}), ...changes};
+      }
+    }
     document.getElementById('adjResult').style.display = 'block';
   } catch(e) { toast('Fout: '+e.message); }
   btn.innerHTML = 'Haal AI-advies op →'; btn.disabled = false;
