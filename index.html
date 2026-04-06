@@ -583,24 +583,23 @@ async function lookupPnr() {
   const btn = document.getElementById('pnrBtn');
   btn.innerHTML = '<span class="spin"></span>'; btn.disabled = true;
   try {
-    const r = await callJSON('Info over naaipatroon "'+val+'". Geef ook het kledingstuktype dat het dichtst bij een van deze opties past: broek, rok, tshirt, polo, blouse, trui, vest, jurk. Geef ook stijladvies en maatadvies.\n\nJSON zonder markdown:\n{"naam":"volledige naam","merk":"merknaam","type":"een van: broek/rok/tshirt/polo/blouse/trui/vest/jurk","stijl":"korte stijlomschrijving (bv. A-lijn, slim fit, wijde pijpen)","beschrijving":"2-3 zinnen over het patroon","moeilijkheid":"Beginner/Gevorderd/Expert","stof_tips":"aanbevolen stoffen","maatadvies":"welke maten extra belangrijk zijn en tips voor dit specifieke patroon","aanpassingen":["mogelijke aanpassing 1","mogelijke aanpassing 2"]}');
+    const r = await callJSON('Info over naaipatroon "'+val+'". Geef het kledingstuktype dat het dichtst bij een van deze opties past: broek, rok, tshirt, polo, blouse, trui, vest, jurk.\n\nJSON zonder markdown:\n{"naam":"volledige naam","merk":"merknaam","type":"een van: broek/rok/tshirt/polo/blouse/trui/vest/jurk","stijl":"max 5 woorden (bv. A-lijn, slim fit)","moeilijkheid":"Beginner/Gevorderd/Expert","stof_tips":"max 8 woorden","maatadvies":"max 1 zin over welke maten extra belangrijk zijn","aanpassingen":["aanpassing 1","aanpassing 2"]}');
     if (!r) return;
-    document.getElementById('pnrTxt').innerHTML = '<strong>'+(r.naam||val)+'</strong>'+(r.merk?' — '+r.merk:'')+'<br>'+(r.beschrijving||r.raw||'')+(r.moeilijkheid?'<br><br>⭐ Niveau: '+r.moeilijkheid:'')+(r.stof_tips?'<br>🧵 Stof: '+r.stof_tips:'')+(r.maatadvies?'<br>📏 '+r.maatadvies:'');
-    const chips = document.getElementById('pnrChips'); chips.innerHTML='';
-    // "Gebruik dit patroon" chip — selects garment, stores ref, navigates to maten
+    const GNAMES = {broek:'Broek',rok:'Rok',tshirt:'T-shirt',polo:'Polo',blouse:'Blouse',trui:'Trui',vest:'Vest',jurk:'Jurk'};
     const garmentType = r.type && GARMENT_GROUP[r.type] ? r.type : null;
+    // Short verification text
+    document.getElementById('pnrTxt').innerHTML = '<strong>'+(r.naam||val)+'</strong>'+(r.merk?' — '+r.merk:'')+(garmentType?' · '+GNAMES[garmentType]:'')+(r.stijl?' · '+r.stijl:'')+(r.moeilijkheid?' · ⭐ '+r.moeilijkheid:'');
+    const chips = document.getElementById('pnrChips'); chips.innerHTML='';
+    // Auto-link pattern: store ref + select garment + go to maten
     if (garmentType) {
-      addChip(chips, '✂️ Gebruik als basis → '+({broek:'Broek',rok:'Rok',tshirt:'T-shirt',polo:'Polo',blouse:'Blouse',trui:'Trui',vest:'Vest',jurk:'Jurk'}[garmentType]||garmentType), 'main', () => {
-        patternRef = { naam: r.naam||val, merk: r.merk||'', type: garmentType, stijl: r.stijl||'', beschrijving: r.beschrijving||'', moeilijkheid: r.moeilijkheid||'', stof_tips: r.stof_tips||'', maatadvies: r.maatadvies||'', aanpassingen: r.aanpassingen||[] };
-        // Auto-select the garment
-        const el = document.getElementById('g-'+garmentType);
-        if (el) pickGarment(garmentType, el);
-        updateRefBanner();
-        toast('Patroon "'+(r.naam||val)+'" actief als basis');
-      });
+      patternRef = { naam: r.naam||val, merk: r.merk||'', type: garmentType, stijl: r.stijl||'', beschrijving: '', moeilijkheid: r.moeilijkheid||'', stof_tips: r.stof_tips||'', maatadvies: r.maatadvies||'', aanpassingen: r.aanpassingen||[] };
+      const el = document.getElementById('g-'+garmentType);
+      if (el) pickGarment(garmentType, el);
+      updateRefBanner();
+      toast('Gekoppeld als '+GNAMES[garmentType]+' — vul je maten in');
     }
-    (r.aanpassingen||[]).forEach(a=>addChip(chips, a, '', ()=>{document.getElementById('adjInp').value='Aanpassing op '+val+': '+a; toast('Ingevuld!');}));
-    addChip(chips, '→ Naar maten', 'go', ()=>goTab('maten'));
+    (r.aanpassingen||[]).forEach(a=>addChip(chips, a, '', ()=>{document.getElementById('adjInp').value='Aanpassing op '+(r.naam||val)+': '+a; goTab('start'); toast('Ingevuld bij aanpassingen');}));
+    if (!garmentType) addChip(chips, '→ Naar maten', 'go', ()=>goTab('maten'));
     document.getElementById('pnrResult').classList.remove('hidden');
   } catch(e) { toast('Fout: '+e.message); }
   btn.innerHTML = 'AI →'; btn.disabled = false;
