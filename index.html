@@ -1,0 +1,1006 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="Patroon Studio">
+<meta name="theme-color" content="#1a1410">
+<title>Patroon Studio ✂️</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+:root{--rust:#c0622e;--ink:#1a1410;--cream:#f5f0e8;--sage:#7a8c6e;--warm:#d4cfc8;--light:#ebe7e0}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:-apple-system,BlinkMacSystemFont,'Helvetica Neue',sans-serif;background:var(--cream);color:var(--ink);font-size:16px;min-height:100dvh;padding-bottom:max(24px,env(safe-area-inset-bottom))}
+.hdr{background:var(--ink);color:#fff;padding:14px 18px 12px;position:sticky;top:0;z-index:100}
+.hdr-title{font-size:1.05rem;font-weight:700}
+.hdr-sub{font-size:.62rem;color:var(--rust);letter-spacing:.1em;text-transform:uppercase;margin-top:2px}
+.tabs{display:flex;background:var(--light);border-bottom:1px solid var(--warm);overflow-x:auto;scrollbar-width:none;position:sticky;top:52px;z-index:99}
+.tabs::-webkit-scrollbar{display:none}
+.tab{flex:none;padding:11px 15px;font-size:.72rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:#9a9590;border:none;background:transparent;cursor:pointer;border-bottom:2.5px solid transparent;white-space:nowrap}
+.tab.active{color:var(--rust);border-bottom-color:var(--rust)}
+.sec{display:none;padding-bottom:28px}
+.sec.active{display:block}
+.card{background:#fff;border-radius:14px;margin:14px 14px 0;overflow:hidden;box-shadow:0 1px 5px rgba(0,0,0,.07)}
+.card-hdr{padding:12px 16px 10px;border-bottom:1px solid var(--light);font-size:.68rem;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--rust)}
+.btn{display:flex;align-items:center;justify-content:center;gap:6px;padding:14px 20px;border:none;border-radius:12px;font-size:.95rem;font-weight:700;cursor:pointer;width:100%}
+.btn:active{opacity:.8}.btn:disabled{opacity:.5;cursor:not-allowed}
+.btn-primary{background:var(--rust);color:#fff}
+.btn-secondary{background:var(--light);color:var(--ink)}
+.btn-wrap{padding:14px 14px 0}
+.field{display:flex;align-items:center;padding:11px 16px;border-bottom:1px solid var(--light);gap:10px}
+.field:last-child{border-bottom:none}
+.field-lbl{flex:1;font-size:.86rem}
+.field-lbl small{display:block;font-size:.67rem;color:#9a9590;margin-top:1px}
+.field-inp{width:66px;text-align:right;border:1px solid var(--warm);border-radius:8px;padding:8px 10px;font-size:1rem;background:var(--cream);-webkit-appearance:none}
+.field-inp:focus{outline:none;border-color:var(--rust);background:#fff}
+.field-unit{font-size:.73rem;color:#9a9590;min-width:22px}
+.sld-wrap{padding:13px 16px;border-bottom:1px solid var(--light)}
+.sld-wrap:last-child{border-bottom:none}
+.sld-top{display:flex;justify-content:space-between;margin-bottom:10px;font-size:.86rem}
+.sld-val{font-weight:700;color:var(--rust)}
+input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:4px;background:var(--warm);border-radius:2px;outline:none}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:24px;height:24px;background:var(--rust);border-radius:50%;cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,.2)}
+.sld-ends{display:flex;justify-content:space-between;font-size:.62rem;color:#b0aba5;margin-top:5px}
+.note{margin:14px 14px 0;padding:11px 14px;background:#e8f4ec;border-radius:10px;font-size:.78rem;color:#3a7a50;line-height:1.5}
+.upload-zone{margin:14px;border:2px dashed var(--warm);border-radius:12px;padding:28px 16px;text-align:center;cursor:pointer;background:#fff;position:relative}
+.upload-zone input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+.upload-zone.loaded{border-color:var(--sage);background:#f0f5f1}
+.upload-icon{font-size:2.2rem;margin-bottom:8px}
+.upload-title{font-size:.95rem;font-weight:600;margin-bottom:3px}
+.upload-sub{font-size:.76rem;color:#9a9590}
+.preview{margin:14px;border-radius:12px;overflow:hidden;box-shadow:0 1px 5px rgba(0,0,0,.07);display:none}
+.preview img{width:100%;max-height:220px;object-fit:cover;display:block}
+.preview-btns{display:flex}
+.preview-btns button{flex:1;padding:13px;border:none;font-size:.84rem;font-weight:700;cursor:pointer}
+.pb-ai{background:var(--rust);color:#fff}.pb-clear{background:var(--light);color:var(--ink)}
+.ai-box{margin:0 14px 0;background:#fff;border-radius:12px;padding:14px;display:none;box-shadow:0 1px 5px rgba(0,0,0,.07)}
+.ai-lbl{font-size:.63rem;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--sage);margin-bottom:8px}
+.ai-txt{font-size:.87rem;line-height:1.55}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.chip{padding:7px 14px;border-radius:20px;font-size:.75rem;font-weight:700;border:none;cursor:pointer;background:var(--light);color:var(--ink)}
+.chip.main{background:var(--rust);color:#fff}.chip.go{background:#e8f4ec;color:#3a7a50}
+.pnr-row{display:flex;gap:10px;padding:14px 16px;align-items:center}
+.pnr-inp{flex:1;border:1.5px solid var(--warm);border-radius:10px;padding:11px 14px;font-size:1rem;background:var(--cream);outline:none}
+.pnr-inp:focus{border-color:var(--rust);background:#fff}
+.pnr-btn{padding:11px 16px;background:var(--rust);color:#fff;border:none;border-radius:10px;font-size:.84rem;font-weight:700;cursor:pointer;min-width:62px;display:flex;align-items:center;justify-content:center}
+.pnr-btn:disabled{opacity:.5}
+.ta{display:block;width:calc(100% - 32px);margin:0 16px 12px;border:1.5px solid var(--warm);border-radius:10px;padding:12px 14px;font-size:.9rem;font-family:inherit;background:var(--cream);resize:none;height:84px;outline:none}
+.ta:focus{border-color:var(--rust);background:#fff}
+.key-box{margin:14px;padding:16px;background:#fff;border-radius:14px;box-shadow:0 1px 5px rgba(0,0,0,.07)}
+.key-box ol{margin:10px 0 12px 18px;font-size:.84rem;line-height:1.8;color:#4a4540}
+.key-inp{width:100%;border:1.5px solid var(--warm);border-radius:10px;padding:11px 14px;font-size:.9rem;background:var(--cream);outline:none;margin-bottom:10px;font-family:monospace}
+.key-inp:focus{border-color:var(--rust);background:#fff}
+.g-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:11px;padding:14px}
+.g-card{background:#fff;border-radius:14px;padding:16px 10px 14px;text-align:center;cursor:pointer;border:2px solid transparent;box-shadow:0 1px 5px rgba(0,0,0,.07);transition:border-color .15s,background .15s}
+.g-card.active{border-color:var(--rust);background:#fff8f4}
+.g-emoji{font-size:1.9rem;margin-bottom:6px}
+.g-name{font-size:.82rem;font-weight:700}
+.g-sub{font-size:.67rem;color:#9a9590;margin-top:3px}
+.badge{display:inline-block;margin-top:6px;padding:2px 8px;border-radius:10px;font-size:.6rem;font-weight:800;text-transform:uppercase}
+.b-ok{background:#e8f4ec;color:#3a7a50}
+.maten-group{display:none}.maten-group.active{display:block}
+.pills{display:flex;flex-wrap:wrap;gap:8px;padding:12px 16px 14px}
+.pill{padding:7px 13px;border-radius:20px;font-size:.76rem;font-weight:600;border:1.5px solid var(--warm);background:#fff;color:var(--ink);cursor:pointer;transition:all .15s}
+.pill.active{background:var(--rust);color:#fff;border-color:var(--rust)}
+.cv-outer{margin:14px 14px 0;background:#fff;border-radius:14px;overflow:auto;-webkit-overflow-scrolling:touch;box-shadow:0 1px 5px rgba(0,0,0,.07);min-height:240px;display:flex;align-items:center;justify-content:center}
+#pat{display:block;touch-action:pan-x pan-y}
+.empty{text-align:center;padding:44px 20px;color:#b0aba5}
+.empty .icon{font-size:2.8rem;margin-bottom:10px}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--light);border-radius:14px;overflow:hidden;margin:14px 14px 0;box-shadow:0 1px 5px rgba(0,0,0,.07)}
+.stat{background:#fff;padding:11px 6px;text-align:center}
+.stat-v{font-size:.95rem;font-weight:800;color:var(--rust)}
+.stat-l{font-size:.6rem;color:#9a9590;text-transform:uppercase;letter-spacing:.05em;margin-top:2px}
+.steps{padding:0 14px;display:flex;flex-direction:column;gap:14px;margin-top:14px}
+.step{background:#fff;border-radius:14px;overflow:hidden;box-shadow:0 1px 5px rgba(0,0,0,.07)}
+.step canvas{display:block;width:100%}
+.step-body{padding:14px 16px}
+.step-num{font-size:.63rem;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--rust);margin-bottom:4px}
+.step-title{font-size:1rem;font-weight:700;margin-bottom:6px}
+.step-desc{font-size:.84rem;line-height:1.55;color:#4a4540}
+.step-tip{margin-top:10px;padding:9px 12px;background:#f0f5f1;border-radius:8px;font-size:.78rem;color:#3a7a50;line-height:1.4}
+.step-loading{padding:24px;text-align:center;color:#9a9590;font-size:.86rem}
+.stof-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;padding:14px 16px}
+.stof-cell{background:var(--cream);border-radius:10px;padding:12px;text-align:center}
+.stof-v{font-size:1.1rem;font-weight:800;color:var(--rust)}
+.stof-l{font-size:.68rem;color:#6b6560;margin-top:2px}
+.exp-row{display:flex;gap:10px;padding:0 14px 0}
+.exp-btn{flex:1;padding:12px;border:1.5px solid var(--warm);border-radius:10px;background:#fff;font-size:.76rem;font-weight:700;color:var(--ink);cursor:pointer;text-align:center}
+.exp-btn:active{background:var(--light)}
+.toast{position:fixed;bottom:max(24px,env(safe-area-inset-bottom));left:50%;transform:translateX(-50%) translateY(100px);background:var(--ink);color:#fff;padding:11px 20px;border-radius:24px;font-size:.83rem;font-weight:500;z-index:999;transition:transform .28s;white-space:nowrap;max-width:90vw;text-align:center}
+.toast.show{transform:translateX(-50%) translateY(0)}
+@keyframes spin{to{transform:rotate(360deg)}}
+.spin{display:inline-block;width:16px;height:16px;border:2.5px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle}
+.spin.dark{border-color:rgba(0,0,0,.15);border-top-color:var(--rust)}
+.hidden{display:none!important}
+</style>
+</head>
+<body>
+
+<div class="hdr">
+  <div class="hdr-title">Patroon Studio ✂️</div>
+  <div class="hdr-sub" id="hdrSub">Start</div>
+</div>
+<div class="tabs">
+  <button class="tab active" onclick="goTab('start')">🏠 Start</button>
+  <button class="tab" onclick="goTab('maten')">📐 Maten</button>
+  <button class="tab" onclick="goTab('patroon')">🗂 Patroon</button>
+  <button class="tab" onclick="goTab('stappen')">📋 Stappen</button>
+  <button class="tab" onclick="goTab('stof')">🧵 Stof</button>
+</div>
+
+<!-- ═══ START ═══ -->
+<div class="sec active" id="sec-start">
+
+  <!-- API Key -->
+  <div class="key-box" id="keyBox">
+    <div class="ai-lbl">🔑 AI instellen (eenmalig)</div>
+    <p style="font-size:.84rem;line-height:1.55;margin-bottom:8px;color:#4a4540">Via OpenRouter — gratis account, geen creditcard nodig.</p>
+    <ol>
+      <li>Ga naar <strong>openrouter.ai</strong> → gratis account aanmaken</li>
+      <li>Klik op <strong>Keys</strong> → <strong>Create key</strong></li>
+      <li>Plak de key hieronder</li>
+    </ol>
+    <input class="key-inp" id="keyInp" type="password" placeholder="sk-or-v1-..." autocomplete="off">
+    <button class="btn btn-primary" onclick="saveKey()">✓ Opslaan</button>
+    <p style="margin-top:10px;font-size:.74rem;color:#9a9590">Wordt alleen lokaal opgeslagen in je browser.</p>
+  </div>
+  <div class="note hidden" id="keyOk" style="cursor:pointer" onclick="resetKey()">✅ AI actief — tik hier om key te wijzigen</div>
+
+  <!-- Patroon nummer -->
+  <div class="card" style="margin-top:14px">
+    <div class="card-hdr">Patroonnummer opzoeken (bv. Vogue V1486)</div>
+    <div class="pnr-row">
+      <input class="pnr-inp" id="pnrInp" placeholder="Vogue V1486, Burda 6234…">
+      <button class="pnr-btn" id="pnrBtn" onclick="lookupPnr()">AI →</button>
+    </div>
+    <div id="pnrResult" class="hidden" style="padding:0 16px 14px">
+      <div class="ai-lbl">Patrooninfo</div>
+      <div class="ai-txt" id="pnrTxt"></div>
+      <div class="chips" id="pnrChips"></div>
+    </div>
+  </div>
+
+  <!-- Foto -->
+  <div class="card" style="margin-top:14px">
+    <div class="card-hdr">Foto analyseren met AI</div>
+    <div class="upload-zone" id="uploadZone">
+      <input type="file" accept="image/*" onchange="handleFile(this)">
+      <div class="upload-icon">📸</div>
+      <div class="upload-title" id="uploadTitle">Foto kiezen of maken</div>
+      <div class="upload-sub">Selecteer een foto van je kledingstuk</div>
+    </div>
+  </div>
+  <div class="preview" id="preview">
+    <img id="previewImg" src="" alt="">
+    <div class="preview-btns">
+      <button class="pb-ai" id="analyzeBtn" onclick="analyzeImg()">🔍 Analyseer</button>
+      <button class="pb-clear" onclick="clearImg()">✕ Wis</button>
+    </div>
+  </div>
+  <div class="ai-box" id="imgResult" style="margin-top:14px">
+    <div class="ai-lbl">AI Analyse</div>
+    <div class="ai-txt" id="imgTxt"></div>
+    <div class="chips" id="imgChips"></div>
+  </div>
+
+  <!-- Aanpassing -->
+  <div class="card" style="margin-top:14px">
+    <div class="card-hdr">Aanpassing beschrijven (bv. rok → jurk)</div>
+    <div style="padding:10px 16px 8px;font-size:.82rem;color:#6b6560">Bijv. <em>"van deze rok een jurk"</em> of <em>"meer A-lijn"</em></div>
+    <textarea class="ta" id="adjInp" placeholder="Beschrijf de aanpassing…"></textarea>
+    <div class="btn-wrap" style="padding-bottom:14px">
+      <button class="btn btn-primary" id="adjBtn" onclick="getAdj()">Haal AI-advies op →</button>
+    </div>
+    <div class="ai-box" id="adjResult" style="margin:0 14px 14px;display:none">
+      <div class="ai-lbl">Aanpassingsadvies</div>
+      <div class="ai-txt" id="adjTxt" style="white-space:pre-wrap"></div>
+    </div>
+  </div>
+
+  <!-- Kledingstuk -->
+  <div class="card" style="margin-top:14px">
+    <div class="card-hdr">Kledingstuk kiezen</div>
+    <div class="g-grid">
+      <div class="g-card active" id="g-broek" onclick="pickGarment('broek',this)"><div class="g-emoji">👖</div><div class="g-name">Broek</div><div class="g-sub">Straight, slim, wide leg</div><span class="badge b-ok">Beschikbaar</span></div>
+      <div class="g-card" id="g-rok" onclick="pickGarment('rok',this)"><div class="g-emoji">👗</div><div class="g-name">Rok</div><div class="g-sub">A-lijn, koker, maxi</div><span class="badge b-ok">Beschikbaar</span></div>
+      <div class="g-card" id="g-tshirt" onclick="pickGarment('tshirt',this)"><div class="g-emoji">👕</div><div class="g-name">T-shirt</div><div class="g-sub">Ronde hals, casual</div><span class="badge b-ok">Beschikbaar</span></div>
+      <div class="g-card" id="g-polo" onclick="pickGarment('polo',this)"><div class="g-emoji">🎽</div><div class="g-name">Polo</div><div class="g-sub">Polokraag, placket</div><span class="badge b-ok">Beschikbaar</span></div>
+      <div class="g-card" id="g-blouse" onclick="pickGarment('blouse',this)"><div class="g-emoji">👚</div><div class="g-name">Blouse / Shirt</div><div class="g-sub">Kraag, knopen voor</div><span class="badge b-ok">Beschikbaar</span></div>
+      <div class="g-card" id="g-trui" onclick="pickGarment('trui',this)"><div class="g-emoji">🧥</div><div class="g-name">Trui / Sweater</div><div class="g-sub">Ronde of v-hals</div><span class="badge b-ok">Beschikbaar</span></div>
+      <div class="g-card" id="g-jurk" onclick="pickGarment('jurk',this)"><div class="g-emoji">👘</div><div class="g-name">Jurk</div><div class="g-sub">Lijfje + rok</div><span class="badge b-ok">Beschikbaar</span></div>
+      <div class="g-card" id="g-vest" onclick="pickGarment('vest',this)"><div class="g-emoji">🧣</div><div class="g-name">Vest / Jas</div><div class="g-sub">Open voor, revers</div><span class="badge b-ok">Beschikbaar</span></div>
+    </div>
+  </div>
+
+  <div class="btn-wrap"><button class="btn btn-primary" onclick="goTab('maten')">Naar maten invullen →</button></div>
+</div>
+
+<!-- ═══ MATEN ═══ -->
+<div class="sec" id="sec-maten">
+  <div class="note">💡 Meet over het lichaam, niet over kleding. Voeg 2–4 cm toe voor gemak.</div>
+  <div class="note hidden" id="refBanner" style="background:#fff8f4;border:1.5px solid var(--rust);cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:8px" onclick="clearRef()">
+    <div><strong style="color:var(--rust)">📐 Basispatroon:</strong> <span id="refBannerTxt"></span><br><small id="refBannerSub" style="color:#9a9590"></small></div>
+    <span style="font-size:.75rem;color:#9a9590;white-space:nowrap">✕ Wis</span>
+  </div>
+
+  <!-- BROEK -->
+  <div class="maten-group active" id="mg-broek">
+    <div class="card">
+      <div class="card-hdr">Lichaamsmaten — Broek</div>
+      <div class="field"><div class="field-lbl">Tailleomtrek<small>Smalste deel van de taille</small></div><div class="field-inp-w"><input class="field-inp" type="number" inputmode="decimal" id="waist" value="72"><span class="field-unit">cm</span></div></div>
+      <div class="field"><div class="field-lbl">Heupomtrek<small>Breedste deel van de heupen</small></div><div class="field-inp-w"><input class="field-inp" type="number" inputmode="decimal" id="hip" value="96"><span class="field-unit">cm</span></div></div>
+      <div class="field"><div class="field-lbl">Beenlengte buitenkant<small>Zij: taille → enkel</small></div><div class="field-inp-w"><input class="field-inp" type="number" inputmode="decimal" id="outseam" value="104"><span class="field-unit">cm</span></div></div>
+      <div class="field"><div class="field-lbl">Beenlengte binnenkant<small>Kruis → enkel</small></div><div class="field-inp-w"><input class="field-inp" type="number" inputmode="decimal" id="inseam" value="78"><span class="field-unit">cm</span></div></div>
+      <div class="field"><div class="field-lbl">Kruisdiepte<small>Zittend: taille → stoel</small></div><div class="field-inp-w"><input class="field-inp" type="number" inputmode="decimal" id="rise" value="26"><span class="field-unit">cm</span></div></div>
+      <div class="field" style="border-bottom:none"><div class="field-lbl">Dijomtrek<small>Breedste deel van de dij</small></div><div class="field-inp-w"><input class="field-inp" type="number" inputmode="decimal" id="thigh" value="58"><span class="field-unit">cm</span></div></div>
+    </div>
+    <div class="card">
+      <div class="card-hdr">Stijl</div>
+      <div class="sld-wrap"><div class="sld-top"><span>Pijpwijdte onderkant</span><span class="sld-val" id="lwD">22 cm</span></div><input type="range" id="legWidth" min="14" max="50" value="22" oninput="lwD.textContent=this.value+' cm'"><div class="sld-ends"><span>Skinny</span><span>Straight</span><span>Wide</span></div></div>
+      <div class="field"><div class="field-lbl">Tailleband hoogte</div><div class="field-inp-w"><input class="field-inp" type="number" inputmode="decimal" id="waistband" value="4"><span class="field-unit">cm</span></div></div>
+      <div class="field" style="border-bottom:none"><div class="field-lbl">Zoom breedte</div><div class="field-inp-w"><input class="field-inp" type="number" inputmode="decimal" id="hem" value="3"><span class="field-unit">cm</span></div></div>
+    </div>
+    <div class="card">
+      <div class="card-hdr">Sluiting</div>
+      <div class="pills" id="sl-broek">
+        <button class="pill active" data-val="onzichtbare rits">Onzichtbare rits</button>
+        <button class="pill" data-val="jeans rits">Jeans rits</button>
+        <button class="pill" data-val="knoop en knoopsgat">Knoop + knoopsgat</button>
+        <button class="pill" data-val="elastiek in tailleband">Elastiek</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ROK -->
+  <div class="maten-group" id="mg-rok">
+    <div class="card">
+      <div class="card-hdr">Lichaamsmaten — Rok</div>
+      <div class="field"><div class="field-lbl">Tailleomtrek<small>Smalste deel</small></div><div class="field-inp-w"><input class="field-inp" type="number" inputmode="decimal" id="r_waist" value="72"><span class="field-unit">cm</span></div></div>
+      <div class="field"><div class="field-lbl">Heupomtrek<small>Breedste deel</small></div><div class="field-inp-w"><input class="field-inp" type="number" inputmode="decimal" id="r_hip" value="96"><span class="field-unit">cm</span></div></div>
+      <div class="field"><div class="field-lbl">Roklengte<small>Taille → gewenste lengte</small></div><div class="field-inp-w"><input class="field-inp" type="number" inputmode="decimal" id="r_len" value="65"><span class="field-unit">cm</span></div></div>
+      <div class="field"><div class="field-lbl">Tailleband hoogte</div><div class="field-inp-w"><input class="field-inp" type="number" inputmode="decimal" id="r_wb" value="4"><span class="field-unit">cm</span></div></div>
+      <div class="field" style="border-bottom:none"><div class="field-lbl">Zoom breedte</div><div class="field-inp-w"><input class="field-inp" type="number" inputmode="decimal" id="r_hem" value="3"><span class="field-unit">cm</span></div></div>
+    </div>
+    <div class="card">
+      <div class="card-hdr">Stijl</div>
+      <div class="sld-wrap" style="border-bottom:none"><div class="sld-top"><span>Silhouet</span><span class="sld-val" id="rsilD">A-lijn</span></div><input type="range" id="r_flare" min="0" max="20" value="8" oninput="rsilD.textContent=this.value==0?'Koker':this.value<8?'Licht A-lijn':this.value<16?'A-lijn':'Wijde rok'"><div class="sld-ends"><span>Koker</span><span>A-lijn</span><span>Wijd</span></div></div>
+    </div>
+    <div class="card">
+      <div class="card-hdr">Sluiting</div>
+      <div class="pills" id="sl-rok">
+        <button class="pill active" data-val="onzichtbare rits middenachter">Onzichtbare rits</button>
+        <button class="pill" data-val="reguliere rits zijkant">Rits opzij</button>
+        <button class="pill" data-val="elastiek in tailleband">Elastiek</button>
+        <button class="pill" data-val="knopen opzij">Knopen</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- SHIRT types: tshirt, polo, blouse, trui, vest -->
+  <div class="maten-group" id="mg-shirt">
+    <div class="card">
+      <div class="card-hdr">Lichaamsmaten — <span id="shirtTypeLabel">T-shirt</span></div>
+      <div class="field"><div class="field-lbl">Borstomtrek<small>Ruimste deel borst</small></div><div class="field-inp-w"><input class="field-inp" type="number" inputmode="decimal" id="s_chest" value="92"><span class="field-unit">cm</span></div></div>
+      <div class="field"><div class="field-lbl">Schouderbreedte<small>Schouder tot schouder (rug)</small></div><div class="field-inp-w"><input class="field-inp" type="number" inputmode="decimal" id="s_shou" value="40"><span class="field-unit">cm</span></div></div>
+      <div class="field"><div class="field-lbl">Ruglengte<small>Nek tot taille</small></div><div class="field-inp-w"><input class="field-inp" type="number" inputmode="decimal" id="s_back" value="44"><span class="field-unit">cm</span></div></div>
+      <div class="field"><div class="field-lbl">Mouwlengte<small>Schouder → pols</small></div><div class="field-inp-w"><input class="field-inp" type="number" inputmode="decimal" id="s_sleeve" value="62"><span class="field-unit">cm</span></div></div>
+      <div class="field"><div class="field-lbl">Polsomtrek<small>Om de pols</small></div><div class="field-inp-w"><input class="field-inp" type="number" inputmode="decimal" id="s_wrist" value="18"><span class="field-unit">cm</span></div></div>
+      <div class="field" style="border-bottom:none"><div class="field-lbl">Nekwijdte<small>Omtrek van de nek</small></div><div class="field-inp-w"><input class="field-inp" type="number" inputmode="decimal" id="s_neck" value="38"><span class="field-unit">cm</span></div></div>
+    </div>
+    <div class="card">
+      <div class="card-hdr">Pasvorm</div>
+      <div class="sld-wrap"><div class="sld-top"><span>Pasvorm</span><span class="sld-val" id="sfitD">Regular</span></div><input type="range" id="s_ease" min="4" max="20" value="10" oninput="sfitD.textContent=this.value<=6?'Slim':this.value<=12?'Regular':this.value<=16?'Relaxed':'Oversized'"><div class="sld-ends"><span>Slim</span><span>Regular</span><span>Oversized</span></div></div>
+      <div class="field" style="border-bottom:none"><div class="field-lbl">Zoom / boord breedte</div><div class="field-inp-w"><input class="field-inp" type="number" inputmode="decimal" id="s_hem" value="2"><span class="field-unit">cm</span></div></div>
+    </div>
+    <div class="card" id="shirt-sluiting-card">
+      <div class="card-hdr" id="shirt-sluiting-hdr">Halsafwerking</div>
+      <div class="pills" id="sl-shirt">
+        <button class="pill active" data-val="jersey boord van ribstof">Jersey boord</button>
+        <button class="pill" data-val="biaisband afwerking hals">Biaisband</button>
+        <button class="pill" data-val="v-hals afgewerkt met biaisband">V-hals</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- JURK -->
+  <div class="maten-group" id="mg-jurk">
+    <div class="card">
+      <div class="card-hdr">Lichaamsmaten — Jurk</div>
+      <div class="field"><div class="field-lbl">Borstomtrek<small>Ruimste deel borst</small></div><div class="field-inp-w"><input class="field-inp" type="number" inputmode="decimal" id="j_chest" value="92"><span class="field-unit">cm</span></div></div>
+      <div class="field"><div class="field-lbl">Tailleomtrek<small>Smalste deel</small></div><div class="field-inp-w"><input class="field-inp" type="number" inputmode="decimal" id="j_waist" value="72"><span class="field-unit">cm</span></div></div>
+      <div class="field"><div class="field-lbl">Heupomtrek<small>Breedste deel</small></div><div class="field-inp-w"><input class="field-inp" type="number" inputmode="decimal" id="j_hip" value="96"><span class="field-unit">cm</span></div></div>
+      <div class="field"><div class="field-lbl">Schouderbreedte<small>Schouder tot schouder</small></div><div class="field-inp-w"><input class="field-inp" type="number" inputmode="decimal" id="j_shou" value="40"><span class="field-unit">cm</span></div></div>
+      <div class="field"><div class="field-lbl">Ruglengte lijfje<small>Nek naar taille</small></div><div class="field-inp-w"><input class="field-inp" type="number" inputmode="decimal" id="j_back" value="44"><span class="field-unit">cm</span></div></div>
+      <div class="field"><div class="field-lbl">Totale jurklengte<small>Schouder naar zoom</small></div><div class="field-inp-w"><input class="field-inp" type="number" inputmode="decimal" id="j_total" value="110"><span class="field-unit">cm</span></div></div>
+      <div class="field" style="border-bottom:none"><div class="field-lbl">Mouwlengte<small>0 = mouwloos</small></div><div class="field-inp-w"><input class="field-inp" type="number" inputmode="decimal" id="j_sleeve" value="0"><span class="field-unit">cm</span></div></div>
+    </div>
+    <div class="card">
+      <div class="card-hdr">Sluiting</div>
+      <div class="pills" id="sl-jurk">
+        <button class="pill active" data-val="onzichtbare rits middenachter">Onzichtbare rits</button>
+        <button class="pill" data-val="reguliere rits zijkant">Rits opzij</button>
+        <button class="pill" data-val="knopen middenachter">Knopen achter</button>
+        <button class="pill" data-val="elastiek in taille">Elastiek taille</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Naadtoeslag (alle types) -->
+  <div class="card" style="margin-top:14px">
+    <div class="card-hdr">Naadtoeslag</div>
+    <div class="sld-wrap" style="border-bottom:none"><div class="sld-top"><span>Naadtoeslag</span><span class="sld-val" id="saD">1.5 cm</span></div><input type="range" id="seam" min="10" max="20" value="15" step="5" oninput="saD.textContent=(this.value/10)+' cm'"><div class="sld-ends"><span>1 cm</span><span>1.5 cm</span><span>2 cm</span></div></div>
+  </div>
+
+  <div class="btn-wrap"><button class="btn btn-primary" onclick="generateAll()">✓ Genereer patroon + stappenplan →</button></div>
+</div>
+
+<!-- ═══ PATROON ═══ -->
+<div class="sec" id="sec-patroon">
+  <div class="empty" id="emptyPat"><div class="icon">🗂</div><p>Vul maten in en klik op Genereer patroon</p></div>
+  <div id="patResult" class="hidden">
+    <div class="stats" id="patStats"></div>
+    <div class="cv-outer"><canvas id="pat"></canvas></div>
+    <div style="padding:14px 14px 0">
+      <div class="exp-row">
+        <button class="exp-btn" onclick="printTiled('A4')">🖨️ A4 tegels</button>
+        <button class="exp-btn" onclick="printTiled('A3')">🖨️ A3 tegels</button>
+        <button class="exp-btn" onclick="exportPNG()">↓ PNG</button>
+        <button class="exp-btn" onclick="exportPDF()">↓ PDF</button>
+      </div>
+      <p style="margin-top:10px;padding:0 0 0;font-size:.74rem;color:#9a9590;line-height:1.5">
+        📐 Controleer na printen: de kalibratiebalk onderaan is exact 10 cm.<br>
+        ✂️ Bij tegels: knip witte rand weg en plak op stippellijn samen.
+      </p>
+    </div>
+    <div class="btn-wrap"><button class="btn btn-secondary" onclick="goTab('maten')">← Maten aanpassen</button></div>
+  </div>
+</div>
+
+<!-- ═══ STAPPEN ═══ -->
+<div class="sec" id="sec-stappen">
+  <div class="empty" id="emptySteps"><div class="icon">📋</div><p>Genereer eerst het patroon</p></div>
+  <div id="stepsResult" class="hidden">
+    <div style="padding:14px 14px 4px;font-size:.82rem;color:#6b6560" id="stepsIntro"></div>
+    <div class="steps" id="stepsList"></div>
+  </div>
+</div>
+
+<!-- ═══ STOF ═══ -->
+<div class="sec" id="sec-stof">
+  <div class="empty" id="emptyStof"><div class="icon">🧵</div><p>Genereer eerst het patroon</p></div>
+  <div id="stofResult" class="hidden">
+    <div class="card" style="margin-top:14px">
+      <div class="card-hdr">Benodigde stof</div>
+      <div class="stof-grid" id="stofGrid"></div>
+      <div style="padding:0 16px 16px"><div class="ai-lbl">Stofadvies</div><div class="ai-txt" id="stofAdvies" style="font-size:.86rem;line-height:1.6;margin-top:6px"></div></div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ─── State ───────────────────────────────────────────────
+let currentGarment = 'broek';
+let patternDone = false;
+let imgData = null, imgMime = 'image/jpeg';
+let patternRef = null; // {naam, merk, type, stijl, beschrijving, moeilijkheid, stof_tips, maatadvies, aanpassingen}
+
+// ─── Tabs ────────────────────────────────────────────────
+const TABS = ['start','maten','patroon','stappen','stof'];
+const LABELS = {start:'Start',maten:'Maten invullen',patroon:'Patroon',stappen:'Stappenplan',stof:'Stofberekening'};
+
+function goTab(name) {
+  document.querySelectorAll('.sec').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('sec-' + name).classList.add('active');
+  document.querySelectorAll('.tab')[TABS.indexOf(name)].classList.add('active');
+  document.getElementById('hdrSub').textContent = LABELS[name] || '';
+  window.scrollTo(0, 0);
+}
+
+// ─── API Key ─────────────────────────────────────────────
+function getKey() { return localStorage.getItem('or_key') || ''; }
+function saveKey() {
+  const k = document.getElementById('keyInp').value.trim();
+  if (!k.startsWith('sk-or-')) { toast('Ongeldige key — begint met sk-or-'); return; }
+  localStorage.setItem('or_key', k); updateKeyUI(); toast('API key opgeslagen ✓');
+}
+function resetKey() { localStorage.removeItem('or_key'); updateKeyUI(); }
+function updateKeyUI() {
+  const has = !!getKey();
+  document.getElementById('keyBox').classList.toggle('hidden', has);
+  document.getElementById('keyOk').classList.toggle('hidden', !has);
+}
+updateKeyUI();
+
+// ─── Pill toggle (generic) ───────────────────────────────
+document.addEventListener('click', function(e) {
+  const pill = e.target.closest('.pill');
+  if (!pill) return;
+  const group = pill.closest('.pills');
+  if (!group) return;
+  group.querySelectorAll('.pill').forEach(p => p.classList.remove('active'));
+  pill.classList.add('active');
+});
+
+function getPill(groupId) {
+  const el = document.querySelector('#' + groupId + ' .pill.active');
+  return el ? el.dataset.val : '';
+}
+
+// ─── Garment config ──────────────────────────────────────
+const GARMENT_GROUP = {broek:'broek',rok:'rok',tshirt:'shirt',polo:'shirt',blouse:'shirt',trui:'shirt',vest:'shirt',jurk:'jurk'};
+const SHIRT_LABEL = {tshirt:'T-shirt',polo:'Polo',blouse:'Blouse / Shirt',trui:'Trui / Sweater',vest:'Vest / Jas'};
+
+const SHIRT_SLUITING = {
+  tshirt: { hdr:'Halsafwerking', pills:[
+    {val:'jersey boord van ribstof',lbl:'Jersey boord',def:true},
+    {val:'biaisband afwerking hals',lbl:'Biaisband'},
+    {val:'v-hals afgewerkt met biaisband',lbl:'V-hals'},
+  ]},
+  polo: { hdr:'Sluiting & kraag', pills:[
+    {val:'polokraag placket met 2-3 knopen',lbl:'Polokraag + placket',def:true},
+  ]},
+  blouse: { hdr:'Sluiting & kraag', pills:[
+    {val:'knopenlijst voor met knopen',lbl:'Knopenlijst voor',def:true},
+    {val:'onzichtbare rits achter',lbl:'Onzichtbare rits achter'},
+    {val:'halve rits voor',lbl:'Halve rits voor'},
+    {val:'klassieke overhemdkraag met knopenlijst',lbl:'Overhemdkraag'},
+  ]},
+  trui: { hdr:'Halsafwerking', pills:[
+    {val:'ribboord ronde hals',lbl:'Ribboord',def:true},
+    {val:'v-hals afgewerkt met ribstof',lbl:'V-hals rib'},
+    {val:'rolkraag van ribstof',lbl:'Rolkraag'},
+  ]},
+  vest: { hdr:'Sluiting', pills:[
+    {val:'knopenrij voor met knopen en knoopsgaten',lbl:'Knopenrij voor',def:true},
+    {val:'rits voor (scheidbare rits)',lbl:'Rits voor'},
+    {val:'open vest zonder sluiting',lbl:'Open (geen)'},
+  ]},
+};
+
+function pickGarment(name, el) {
+  currentGarment = name;
+  document.querySelectorAll('.g-card').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+  // Switch maten group
+  document.querySelectorAll('.maten-group').forEach(g => g.classList.remove('active'));
+  const group = GARMENT_GROUP[name] || 'broek';
+  document.getElementById('mg-' + group).classList.add('active');
+  // Update shirt label and sluiting options
+  if (SHIRT_LABEL[name]) {
+    document.getElementById('shirtTypeLabel').textContent = SHIRT_LABEL[name];
+    const cfg = SHIRT_SLUITING[name];
+    if (cfg) {
+      document.getElementById('shirt-sluiting-hdr').textContent = cfg.hdr;
+      const container = document.getElementById('sl-shirt');
+      container.innerHTML = cfg.pills.map(p =>
+        '<button class="pill' + (p.def ? ' active' : '') + '" data-val="' + p.val + '">' + p.lbl + '</button>'
+      ).join('');
+    }
+  }
+  goTab('maten');
+}
+
+function updateRefBanner() {
+  const b = document.getElementById('refBanner');
+  if (!patternRef) { b.classList.add('hidden'); return; }
+  b.classList.remove('hidden');
+  document.getElementById('refBannerTxt').textContent = patternRef.naam + (patternRef.merk ? ' — ' + patternRef.merk : '');
+  document.getElementById('refBannerSub').textContent = (patternRef.stijl ? patternRef.stijl + ' · ' : '') + (patternRef.maatadvies || 'Vul je maten in en genereer het patroon');
+}
+function clearRef() {
+  patternRef = null;
+  document.getElementById('refBanner').classList.add('hidden');
+  toast('Basispatroon gewist');
+}
+
+// ─── File upload ─────────────────────────────────────────
+function handleFile(input) {
+  const file = input.files[0]; if (!file) return;
+  imgMime = file.type || 'image/jpeg';
+  const r = new FileReader();
+  r.onload = e => {
+    imgData = e.target.result.split(',')[1];
+    document.getElementById('previewImg').src = e.target.result;
+    document.getElementById('preview').style.display = 'block';
+    document.getElementById('uploadZone').classList.add('loaded');
+    document.getElementById('uploadTitle').textContent = 'Foto geladen ✓';
+  };
+  r.readAsDataURL(file);
+}
+function clearImg() {
+  imgData = null;
+  document.getElementById('preview').style.display = 'none';
+  document.getElementById('uploadZone').classList.remove('loaded');
+  document.getElementById('uploadTitle').textContent = 'Foto kiezen of maken';
+  document.getElementById('imgResult').style.display = 'none';
+}
+
+// ─── AI ──────────────────────────────────────────────────
+const TEXT_MODELS = ['deepseek/deepseek-chat-v3-0324:free','meta-llama/llama-3.3-70b-instruct:free','mistralai/mistral-small-3.1-24b-instruct:free','openrouter/auto'];
+const IMG_MODELS  = ['meta-llama/llama-4-maverick:free','qwen/qwen2.5-vl-72b-instruct:free','openrouter/auto'];
+
+async function callAI(messages, hasImage) {
+  const key = getKey();
+  if (!key) { toast('Stel eerst je OpenRouter API key in'); return null; }
+  const sys = {role:'system', content:'Je bent een expert naaipatroon-assistent. Antwoord ALTIJD in het Nederlands. Geef praktisch naai-advies.'};
+  const models = hasImage ? IMG_MODELS : TEXT_MODELS;
+  for (const model of models) {
+    try {
+      const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+        method:'POST',
+        headers:{'Content-Type':'application/json','Authorization':'Bearer '+key,'HTTP-Referer':location.href,'X-Title':'Patroon Studio'},
+        body: JSON.stringify({model, messages:[sys,...messages], max_tokens:1000}),
+      });
+      const d = await res.json();
+      if (d.error) { console.warn(model, d.error.message); continue; }
+      const text = d.choices?.[0]?.message?.content || '';
+      if (text) return text;
+    } catch(e) { console.warn(model, e.message); }
+  }
+  throw new Error('Alle AI-modellen geven een fout. Controleer je API key op openrouter.ai.');
+}
+
+async function callJSON(prompt, b64, mime) {
+  const content = [];
+  if (b64) content.push({type:'image_url', image_url:{url:'data:'+mime+';base64,'+b64}});
+  content.push({type:'text', text:prompt});
+  const raw = await callAI([{role:'user', content}], !!b64);
+  if (!raw) return null;
+  try { return JSON.parse(raw.replace(/```json|```/g,'').trim()); } catch { return {raw}; }
+}
+
+function addChip(parent, label, cls, fn) {
+  const c = document.createElement('button');
+  c.className = 'chip ' + (cls||''); c.textContent = label; c.onclick = fn;
+  parent.appendChild(c);
+}
+
+async function analyzeImg() {
+  if (!imgData) { toast('Upload eerst een foto'); return; }
+  const btn = document.getElementById('analyzeBtn');
+  btn.innerHTML = '<span class="spin"></span> Analyseren…'; btn.disabled = true;
+  try {
+    const r = await callJSON('Analyseer dit kledingstuk. JSON zonder markdown:\n{"type":"hoofdtype","stijl":"stijlomschrijving","details":"2-3 zinnen over pasvorm","maten_tips":"tip voor opmeten","alternatieven":["alt1","alt2"]}', imgData, imgMime);
+    if (!r) return;
+    document.getElementById('imgTxt').innerHTML = '<strong>'+(r.stijl||r.type||'')+'</strong><br>'+(r.details||r.raw||'')+(r.maten_tips?'<br><br>📏 '+r.maten_tips:'');
+    const chips = document.getElementById('imgChips'); chips.innerHTML='';
+    addChip(chips, r.stijl||r.type, 'main', ()=>goTab('maten'));
+    (r.alternatieven||[]).forEach(a=>addChip(chips, a, '', ()=>toast('Selecteer dit type bij kledingstuk kiezen')));
+    addChip(chips, '→ Naar maten', 'go', ()=>goTab('maten'));
+    document.getElementById('imgResult').style.display = 'block';
+  } catch(e) { toast('Fout: '+e.message); }
+  btn.innerHTML = '🔍 Analyseer'; btn.disabled = false;
+}
+
+async function lookupPnr() {
+  const val = document.getElementById('pnrInp').value.trim();
+  if (!val) { toast('Vul een patroonnummer in'); return; }
+  const btn = document.getElementById('pnrBtn');
+  btn.innerHTML = '<span class="spin"></span>'; btn.disabled = true;
+  try {
+    const r = await callJSON('Info over naaipatroon "'+val+'". Geef ook het kledingstuktype dat het dichtst bij een van deze opties past: broek, rok, tshirt, polo, blouse, trui, vest, jurk. Geef ook stijladvies en maatadvies.\n\nJSON zonder markdown:\n{"naam":"volledige naam","merk":"merknaam","type":"een van: broek/rok/tshirt/polo/blouse/trui/vest/jurk","stijl":"korte stijlomschrijving (bv. A-lijn, slim fit, wijde pijpen)","beschrijving":"2-3 zinnen over het patroon","moeilijkheid":"Beginner/Gevorderd/Expert","stof_tips":"aanbevolen stoffen","maatadvies":"welke maten extra belangrijk zijn en tips voor dit specifieke patroon","aanpassingen":["mogelijke aanpassing 1","mogelijke aanpassing 2"]}');
+    if (!r) return;
+    document.getElementById('pnrTxt').innerHTML = '<strong>'+(r.naam||val)+'</strong>'+(r.merk?' — '+r.merk:'')+'<br>'+(r.beschrijving||r.raw||'')+(r.moeilijkheid?'<br><br>⭐ Niveau: '+r.moeilijkheid:'')+(r.stof_tips?'<br>🧵 Stof: '+r.stof_tips:'')+(r.maatadvies?'<br>📏 '+r.maatadvies:'');
+    const chips = document.getElementById('pnrChips'); chips.innerHTML='';
+    // "Gebruik dit patroon" chip — selects garment, stores ref, navigates to maten
+    const garmentType = r.type && GARMENT_GROUP[r.type] ? r.type : null;
+    if (garmentType) {
+      addChip(chips, '✂️ Gebruik als basis → '+({broek:'Broek',rok:'Rok',tshirt:'T-shirt',polo:'Polo',blouse:'Blouse',trui:'Trui',vest:'Vest',jurk:'Jurk'}[garmentType]||garmentType), 'main', () => {
+        patternRef = { naam: r.naam||val, merk: r.merk||'', type: garmentType, stijl: r.stijl||'', beschrijving: r.beschrijving||'', moeilijkheid: r.moeilijkheid||'', stof_tips: r.stof_tips||'', maatadvies: r.maatadvies||'', aanpassingen: r.aanpassingen||[] };
+        // Auto-select the garment
+        const el = document.getElementById('g-'+garmentType);
+        if (el) pickGarment(garmentType, el);
+        updateRefBanner();
+        toast('Patroon "'+(r.naam||val)+'" actief als basis');
+      });
+    }
+    (r.aanpassingen||[]).forEach(a=>addChip(chips, a, '', ()=>{document.getElementById('adjInp').value='Aanpassing op '+val+': '+a; toast('Ingevuld!');}));
+    addChip(chips, '→ Naar maten', 'go', ()=>goTab('maten'));
+    document.getElementById('pnrResult').classList.remove('hidden');
+  } catch(e) { toast('Fout: '+e.message); }
+  btn.innerHTML = 'AI →'; btn.disabled = false;
+}
+
+async function getAdj() {
+  const val = document.getElementById('adjInp').value.trim();
+  if (!val) { toast('Beschrijf eerst de aanpassing'); return; }
+  const btn = document.getElementById('adjBtn');
+  btn.innerHTML = '<span class="spin"></span> Denken…'; btn.disabled = true;
+  try {
+    const pnr = document.getElementById('pnrInp').value.trim();
+    const refCtx = patternRef ? 'Basispatroon: ' + patternRef.naam + (patternRef.stijl ? ' (' + patternRef.stijl + ')' : '') + '. ' : (pnr ? 'Patroon: ' + pnr + '. ' : '');
+    const text = await callAI([{role:'user', content:refCtx+'Aanpassing: "'+val+'". Praktisch naai-advies in max 4 alineas. Bespreek: wat toe te voegen of weg te laten, welke maten veranderen, valkuilen.'}]);
+    if (!text) return;
+    document.getElementById('adjTxt').textContent = text;
+    document.getElementById('adjResult').style.display = 'block';
+  } catch(e) { toast('Fout: '+e.message); }
+  btn.innerHTML = 'Haal AI-advies op →'; btn.disabled = false;
+}
+
+// ─── Generate ────────────────────────────────────────────
+const gv = id => parseFloat(document.getElementById(id)?.value) || 0;
+const SA = () => (gv('seam') || 15) / 10;
+
+async function generateAll() {
+  drawPattern();
+  buildStof();
+  goTab('patroon');
+  await buildSteps();
+}
+</script>
+<script>
+// ─── Pattern drawing ─────────────────────────────────────
+function drawPattern() {
+  document.getElementById('emptyPat').classList.add('hidden');
+  document.getElementById('patResult').classList.remove('hidden');
+  patternDone = true;
+  const cv = document.getElementById('pat');
+  const g = currentGarment;
+  if (g==='broek') drawBroek(cv);
+  else if (g==='rok') drawRok(cv);
+  else if (g==='jurk') drawJurk(cv);
+  else drawShirt(cv);
+  // Calibration bar + pattern ref label
+  const dpr = Math.min(window.devicePixelRatio||1,2);
+  const ctx = cv.getContext('2d');
+  drawCalBar(ctx, 20, cv.height/dpr - 28, 4);
+  if (patternRef) {
+    ctx.save(); ctx.font='11px -apple-system,sans-serif'; ctx.fillStyle='#c0622e'; ctx.textAlign='right';
+    ctx.fillText('Basis: '+patternRef.naam+(patternRef.stijl?' — '+patternRef.stijl:''), cv.width/dpr-20, cv.height/dpr-16);
+    ctx.restore();
+  }
+}
+
+function mkCanvas(cv, W, H) {
+  const dpr = Math.min(window.devicePixelRatio||1,2);
+  cv.width=W*dpr; cv.height=H*dpr; cv.style.width=W+'px'; cv.style.height=H+'px';
+  const ctx=cv.getContext('2d'); ctx.scale(dpr,dpr); ctx.clearRect(0,0,W,H);
+  ctx.save(); ctx.strokeStyle='#ebe7e0'; ctx.lineWidth=.5;
+  for(let x=0;x<=W;x+=20){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke();}
+  for(let y=0;y<=H;y+=20){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke();}
+  ctx.restore(); return ctx;
+}
+function pan(ctx,pts,fill,stroke){ctx.save();ctx.beginPath();ctx.moveTo(pts[0][0],pts[0][1]);pts.slice(1).forEach(([x,y])=>ctx.lineTo(x,y));ctx.closePath();ctx.fillStyle=fill;ctx.fill();ctx.strokeStyle=stroke;ctx.lineWidth=2;ctx.stroke();ctx.restore();}
+function idash(ctx,pts,off,col){const cx=pts.reduce((a,p)=>a+p[0],0)/pts.length,cy=pts.reduce((a,p)=>a+p[1],0)/pts.length;const inn=pts.map(([x,y])=>{const dx=cx-x,dy=cy-y,l=Math.hypot(dx,dy)||1;return[x+dx/l*off*.8,y+dy/l*off*.8];});ctx.save();ctx.setLineDash([4,4]);ctx.strokeStyle=col;ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(inn[0][0],inn[0][1]);inn.slice(1).forEach(([x,y])=>ctx.lineTo(x,y));ctx.closePath();ctx.stroke();ctx.restore();}
+function grn(ctx,x1,y1,x2,y2){ctx.save();ctx.strokeStyle='#7a8c6e';ctx.lineWidth=1;ctx.setLineDash([5,3]);ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke();ctx.setLineDash([]);ctx.lineWidth=1.5;[[x1,y1,-1],[x2,y2,1]].forEach(([x,y,d])=>{ctx.beginPath();ctx.moveTo(x-4,y+d*8);ctx.lineTo(x,y);ctx.lineTo(x+4,y+d*8);ctx.stroke();});ctx.restore();}
+function lbl(ctx,cx,cy,t,s){ctx.save();ctx.textAlign='center';ctx.font='600 12px -apple-system,sans-serif';ctx.fillStyle='#1a1410';ctx.fillText(t,cx,cy);if(s){ctx.font='10px -apple-system,sans-serif';ctx.fillStyle='#9a9590';ctx.fillText(s,cx,cy+15);}ctx.restore();}
+function st3(a,b,c){
+  const refHtml = patternRef ? '<div style="grid-column:1/-1;padding:8px 10px;background:#fff8f4;text-align:center;font-size:.78rem;color:var(--rust);font-weight:600">📐 '+patternRef.naam+(patternRef.stijl?' — '+patternRef.stijl:'')+'</div>' : '';
+  document.getElementById('patStats').innerHTML=refHtml+'<div class="stat"><div class="stat-v">'+a[1]+'</div><div class="stat-l">'+a[0]+'</div></div><div class="stat"><div class="stat-v">'+b[1]+'</div><div class="stat-l">'+b[0]+'</div></div><div class="stat"><div class="stat-v">'+c[1]+'</div><div class="stat-l">'+c[0]+'</div></div>';
+}
+function drawCalBar(ctx,x,y,S){const n=10;for(let i=0;i<n;i++){ctx.fillStyle=i%2===0?'#222':'#fff';ctx.strokeStyle='#222';ctx.lineWidth=.5;ctx.beginPath();ctx.rect(x+i*S,y,S,S*.65);ctx.fill();ctx.stroke();}ctx.fillStyle='#333';ctx.font='bold '+(S*.75)+'px sans-serif';ctx.textAlign='left';ctx.fillText('0',x,y+S*.65+S*.85);ctx.textAlign='right';ctx.fillText('10cm',x+n*S,y+S*.65+S*.85);}
+
+function drawBroek(cv) {
+  const W=gv('waist'),H=gv('hip'),IS=gv('inseam'),R=gv('rise'),TH=gv('thigh'),LW=gv('legWidth'),WB=gv('waistband');
+  const sa=SA(),S=4,PAD=46,GAP=28;
+  const fw=W/4-1,bw=W/4+1,fh=H/4+1,bh=H/4+3,legBot=LW/2,legMid=TH/4,ce=4;
+  const fp=[[(fh-fw)/2,0],[(fh-fw)/2+fw,0],[fh,R*.35],[fh,R],[fh-(fh-legMid)*.7,R+IS*.45],[legBot,R+IS],[fh*.02-legBot,R+IS],[0,R+IS*.45],[0,R],[-3,R*.55],[(fh-fw)/2,R*.1]];
+  const bp=[[(bh-bw)/2-ce,0],[(bh-bw)/2-ce+bw,0],[bh,R*.35],[bh,R],[bh-(bh-legMid)*.65,R+IS*.45],[legBot+2,R+IS],[bh*.05-legBot,R+IS],[0,R+IS*.45],[-ce,R],[-ce-2,R*.55],[(bh-bw)/2-ce,R*.12]];
+  const mnX=p=>Math.min(...p.map(q=>q[0])),mxX=p=>Math.max(...p.map(q=>q[0])),mxY=p=>Math.max(...p.map(q=>q[1]));
+  const fmx=mnX(fp),fW=mxX(fp)-fmx,fH=mxY(fp),bmx=mnX(bp),bW=mxX(bp)-bmx,bH=mxY(bp);
+  const fOX=PAD+(-fmx)*S,fOY=PAD,bOX=fOX+fW*S+GAP+(-bmx)*S,bOY=PAD;
+  const wbWcm=W/2+3,wbX=PAD,wbY=fOY+Math.max(fH,bH)*S+28,wbW=wbWcm*S,wbH=WB*S;
+  const cvW=Math.max(bOX+bW*S+PAD,wbX+wbW+PAD),cvH=wbY+wbH+PAD+20;
+  const ctx=mkCanvas(cv,cvW,cvH);
+  const px=(raw,ox,oy)=>raw.map(([x,y])=>[ox+x*S,oy+y*S]);
+  const fP=px(fp,fOX,fOY),bP=px(bp,bOX,bOY);
+  pan(ctx,fP,'#fdf6ee','#c0622e');pan(ctx,bP,'#f0ebe2','#1a1410');
+  idash(ctx,fP,sa*S,'rgba(192,98,46,.4)');idash(ctx,bP,sa*S,'rgba(42,32,24,.2)');
+  lbl(ctx,fOX+(fmx+fW/2)*S,fOY+R*S/2,'Voorpand','x 2');lbl(ctx,bOX+(bmx+bW/2)*S,bOY+R*S/2,'Achterpand','x 2');
+  grn(ctx,fOX+(fmx+fW/2)*S,fOY+12,fOX+(fmx+fW/2)*S,fOY+fH*S-12);
+  grn(ctx,bOX+(bmx+bW/2)*S,bOY+12,bOX+(bmx+bW/2)*S,bOY+bH*S-12);
+  ctx.save();ctx.fillStyle='#fff8ef';ctx.strokeStyle='#c0622e';ctx.lineWidth=1.5;ctx.beginPath();ctx.rect(wbX,wbY,wbW,wbH);ctx.fill();ctx.stroke();ctx.fillStyle='#1a1410';ctx.font='600 11px -apple-system,sans-serif';ctx.textAlign='center';ctx.fillText('Tailleband',wbX+wbW/2,wbY+wbH/2+4);ctx.font='9px -apple-system,sans-serif';ctx.fillStyle='#9a9590';ctx.fillText(wbWcm.toFixed(1)+'cm x '+WB+'cm',wbX+wbW/2,wbY+wbH/2+17);ctx.restore();
+  st3(['Taille',W+'cm'],['Heup',H+'cm'],['Beenlengte',IS+'cm']);
+}
+
+function drawRok(cv) {
+  const W=gv('r_waist'),H=gv('r_hip'),L=gv('r_len'),WB=gv('r_wb'),flare=gv('r_flare');
+  const sa=SA(),S=4,PAD=44,GAP=28;
+  const tw=W/4+1,bw2=H/4+1+flare;
+  const fP=[[PAD,PAD],[PAD+tw*S,PAD],[PAD+bw2*S,PAD+L*S],[PAD,PAD+L*S]];
+  const bOX=PAD+bw2*S+GAP;
+  const bP=[[bOX,PAD],[bOX+tw*S,PAD],[bOX+bw2*S,PAD+L*S],[bOX,PAD+L*S]];
+  const wbWcm=W/2+2,wbX=PAD,wbY=PAD+L*S+28,wbW=wbWcm*S,wbH=WB*S;
+  const cvW=Math.max(bOX+bw2*S+PAD,wbX+wbW+PAD),cvH=wbY+wbH+PAD+20;
+  const ctx=mkCanvas(cv,cvW,cvH);
+  pan(ctx,fP,'#fdf6ee','#c0622e');pan(ctx,bP,'#f0ebe2','#1a1410');
+  idash(ctx,fP,sa*S,'rgba(192,98,46,.4)');idash(ctx,bP,sa*S,'rgba(42,32,24,.2)');
+  lbl(ctx,PAD+bw2*S/2,PAD+L*S/2,'Voorpand','x 1');lbl(ctx,bOX+bw2*S/2,PAD+L*S/2,'Achterpand','x 1');
+  grn(ctx,PAD+bw2*S/2,PAD+12,PAD+bw2*S/2,PAD+L*S-12);
+  ctx.save();ctx.fillStyle='#fff8ef';ctx.strokeStyle='#c0622e';ctx.lineWidth=1.5;ctx.beginPath();ctx.rect(wbX,wbY,wbW,wbH);ctx.fill();ctx.stroke();ctx.fillStyle='#1a1410';ctx.font='600 11px -apple-system,sans-serif';ctx.textAlign='center';ctx.fillText('Tailleband',wbX+wbW/2,wbY+wbH/2+4);ctx.restore();
+  st3(['Taille',W+'cm'],['Heup',H+'cm'],['Roklengte',L+'cm']);
+}
+
+function drawShirt(cv) {
+  const C=gv('s_chest'),SH=gv('s_shou'),BK=gv('s_back'),SL=gv('s_sleeve'),ease=gv('s_ease');
+  const sa=SA(),S=4,PAD=44,GAP=28;
+  const cw=(C+ease)/4+1,sh2=SH/2,nkW=C/24,nkD=C/40,armD=sh2*.7;
+  const mkBody=(ox,oy,nd)=>[[ox+nkW,oy],[ox+sh2*S,oy],[ox+cw*S,oy+armD*S],[ox+cw*S,oy+BK*S],[ox,oy+BK*S],[ox,oy+armD*S],[ox+nkW,oy+nd*S]];
+  const fP=mkBody(PAD,PAD,nkD);
+  const bOX=PAD+sh2*S+cw*S+GAP;
+  const bP=mkBody(bOX,PAD,nkD*.5);
+  const slW=(C*.38+ease/2)/2,slOX=PAD,slOY=PAD+BK*S+36,capH=5;
+  const sl1=[[slOX,slOY+capH*S],[slOX+slW*S/2,slOY],[slOX+slW*S,slOY+capH*S],[slOX+slW*S,slOY+SL*S],[slOX,slOY+SL*S]];
+  const sl2=sl1.map(([x,y])=>[x+slW*S+GAP,y]);
+  const cvW=Math.max(bOX+cw*S+sh2*S+PAD,slOX+slW*S*2+GAP+PAD);
+  const cvH=slOY+SL*S+PAD+20;
+  const ctx=mkCanvas(cv,cvW,cvH);
+  pan(ctx,fP,'#fdf6ee','#c0622e');pan(ctx,bP,'#f0ebe2','#1a1410');
+  pan(ctx,sl1,'#f5f0f8','#7a8c6e');pan(ctx,sl2,'#f5f0f8','#7a8c6e');
+  idash(ctx,fP,sa*S,'rgba(192,98,46,.4)');idash(ctx,bP,sa*S,'rgba(42,32,24,.2)');
+  lbl(ctx,PAD+sh2*S/2+(cw*S)/2,PAD+BK*S/2,'Voorpand','x 1');
+  lbl(ctx,bOX+sh2*S/2+(cw*S)/2,PAD+BK*S/2,'Achterpand','x 1');
+  lbl(ctx,slOX+slW*S/2,slOY+SL*S/2,'Mouw','x 2');
+  grn(ctx,PAD+sh2*S/2+(cw*S)/2,PAD+12,PAD+sh2*S/2+(cw*S)/2,PAD+BK*S-12);
+  st3(['Borst',C+'cm'],['Ruglengte',BK+'cm'],['Mouwlengte',SL+'cm']);
+}
+
+function drawJurk(cv) {
+  const C=gv('j_chest'),W=gv('j_waist'),H=gv('j_hip'),SH=gv('j_shou'),BK=gv('j_back'),TOT=gv('j_total');
+  const sa=SA(),S=4,PAD=44,GAP=24;
+  const skL=TOT-BK,sh2=SH/2,cw=C/4+2,nkW=C/24,nkD=C/40,armD=sh2*.7;
+  const mkBody=(ox,oy,nd)=>[[ox+nkW,oy],[ox+sh2*S,oy],[ox+cw*S,oy+armD*S],[ox+cw*S,oy+BK*S],[ox,oy+BK*S],[ox,oy+armD*S],[ox+nkW,oy+nd*S]];
+  const bfP=mkBody(PAD,PAD,nkD);
+  const bOX=PAD+cw*S+sh2*S+GAP;
+  const bbP=mkBody(bOX,PAD,nkD*.5);
+  const tw=W/4+1,sw=H/4+1+4,skOY=PAD+BK*S+GAP;
+  const sfP=[[PAD,skOY],[PAD+tw*S,skOY],[PAD+sw*S,skOY+skL*S],[PAD,skOY+skL*S]];
+  const sbOX=PAD+sw*S+GAP;
+  const sbP=[[sbOX,skOY],[sbOX+tw*S,skOY],[sbOX+sw*S,skOY+skL*S],[sbOX,skOY+skL*S]];
+  const cvW=Math.max(bOX+cw*S+sh2*S+PAD,sbOX+sw*S+PAD);
+  const cvH=skOY+skL*S+PAD+20;
+  const ctx=mkCanvas(cv,cvW,cvH);
+  pan(ctx,bfP,'#fdf6ee','#c0622e');pan(ctx,bbP,'#f0ebe2','#1a1410');
+  pan(ctx,sfP,'#fdf6ee','#c0622e');pan(ctx,sbP,'#f0ebe2','#1a1410');
+  idash(ctx,bfP,sa*S,'rgba(192,98,46,.4)');idash(ctx,bbP,sa*S,'rgba(42,32,24,.2)');
+  lbl(ctx,PAD+cw*S/2+sh2*S/2,PAD+BK*S/2,'Lijfje voor','x 1');
+  lbl(ctx,bOX+cw*S/2+sh2*S/2,PAD+BK*S/2,'Lijfje rug','x 1');
+  lbl(ctx,PAD+sw*S/2,skOY+skL*S/2,'Rok voor','x 1');
+  lbl(ctx,sbOX+sw*S/2,skOY+skL*S/2,'Rok rug','x 1');
+  st3(['Borst',C+'cm'],['Taille',W+'cm'],['Totaal',TOT+'cm']);
+}
+</script>
+<script>
+// ─── Stof ────────────────────────────────────────────────
+function buildStof() {
+  const g = currentGarment, sa = SA();
+  let cells = [], advies = '';
+  if (g==='broek') {
+    const W=gv('waist'),H=gv('hip'),IS=gv('inseam'),R=gv('rise'),WB=gv('waistband'),LW=gv('legWidth');
+    const len=Math.ceil((Math.ceil(4/Math.max(Math.floor(140/(H/2+8)),1))*(R+IS+WB+8)+30)/10)*10;
+    cells=[{v:len+'cm',l:'Stof 140cm breed'},{v:Math.ceil(len*1.1/10)*10+'cm',l:'Stof 115cm breed'},{v:Math.ceil(W/10+.5)*10+'cm',l:'Tussenvoering'},{v:'0.5m',l:'Rits/knopen'}];
+    advies='Voor een broek met pijpwijdte '+LW+'cm: gabardine, linnen-mix, katoen-twill of stretch-katoen. Naadtoeslag '+sa+'cm, zoom '+gv('hem')+'cm.';
+  } else if (g==='rok') {
+    const W=gv('r_waist'),L=gv('r_len'),WB=gv('r_wb');
+    const len=Math.ceil((L+WB+6)*2+20);
+    cells=[{v:len+'cm',l:'Stof 140cm breed'},{v:Math.ceil(len*1.2)+'cm',l:'Stof 115cm breed'},{v:Math.ceil(W/10+.5)*10+'cm',l:'Tussenvoering'},{v:'1 stuks',l:'Rits 22cm'}];
+    advies='Voor een rok: katoen-twill, linnen, chiffon of crêpe. Naadtoeslag '+sa+'cm, zoom '+gv('r_hem')+'cm.';
+  } else if (g==='jurk') {
+    const TOT=gv('j_total');
+    const len=Math.ceil(TOT*2+30);
+    cells=[{v:len+'cm',l:'Stof 140cm breed'},{v:Math.ceil(len*1.15)+'cm',l:'Stof 115cm breed'},{v:'60cm',l:'Voering (lijfje)'},{v:'1 stuks',l:'Onzichtbare rits'}];
+    advies='Voor een jurk: crêpe, jersey, viscose of chiffon. Naadtoeslag '+sa+'cm.';
+  } else {
+    const C=gv('s_chest'),BK=gv('s_back'),SL=gv('s_sleeve');
+    const len=Math.ceil((BK+sa)*2+(SL+sa)*2+20);
+    const adv={tshirt:'jersey, single jersey of interlock. Naai met overlocker of zigzagsteek.',polo:'piké-stof (piqué). Gebruik rekbare naden.',blouse:'katoen-popeline, voile of zijde-look.',trui:'sweatstof, french terry of fleece. Boorden van ribstof.',vest:'gabardine, wol-mix of canvas.'};
+    cells=[{v:len+'cm',l:'Stof 140cm breed'},{v:Math.ceil(len*1.15)+'cm',l:'Stof 115cm breed'},{v:Math.ceil(C/10+.5)*10+'cm',l:'Tussenvoering'},{v:g==='blouse'?'7-9 st':'n.v.t.',l:'Knopen'}];
+    advies='Voor een '+(SHIRT_LABEL[g]||g)+': '+(adv[g]||'')+'  Naadtoeslag '+sa+'cm.';
+  }
+  const grid=document.getElementById('stofGrid'); grid.innerHTML='';
+  cells.forEach(({v,l})=>grid.insertAdjacentHTML('beforeend','<div class="stof-cell"><div class="stof-v">'+v+'</div><div class="stof-l">'+l+'</div></div>'));
+  document.getElementById('stofAdvies').textContent=advies;
+  document.getElementById('emptyStof').classList.add('hidden');
+  document.getElementById('stofResult').classList.remove('hidden');
+}
+
+// ─── Steps ───────────────────────────────────────────────
+const STEP_DRAWS = {
+  broek: [
+    (c,w,h)=>{[[48,10,112,10,122,h-14,46,h-14,'#fdf6ee','#c0622e','Voorpand x2'],[148,10,212,10,222,h-14,146,h-14,'#f0ebe2','#1a1410','Achterpand x2']].forEach(([x1,y1,x2,y2,x3,y3,x4,y4,f,s,lb])=>{c.fillStyle=f;c.strokeStyle=s;c.lineWidth=1.5;c.beginPath();c.moveTo(x1,y1);c.lineTo(x2,y2);c.lineTo(x3,y3);c.lineTo(x4,y4);c.closePath();c.fill();c.stroke();c.fillStyle='#1a1410';c.font='600 9px sans-serif';c.textAlign='center';c.fillText(lb,(x1+x3)/2,(y1+y3)/2);});c.font='20px sans-serif';c.fillText('✂️',w-32,h/2+6);},
+    (c,w,h)=>{[0,1].forEach(i=>{const ox=i?163:48,f=i?'#f0ebe2':'#fdf6ee',s=i?'#1a1410':'#c0622e';c.fillStyle=f;c.strokeStyle=s;c.lineWidth=1.5;c.beginPath();c.moveTo(ox+15,12);c.lineTo(ox+57,12);c.lineTo(ox+64,h-14);c.lineTo(ox+8,h-14);c.closePath();c.fill();c.stroke();c.strokeStyle='#e44';c.lineWidth=3;c.beginPath();c.moveTo(ox+15,12);c.lineTo(ox+8,h-14);c.stroke();});c.fillStyle='#c0622e';c.font='600 10px sans-serif';c.textAlign='center';c.fillText('zijnaad stikken (rood)',w/2,h-3);},
+    (c,w,h)=>{c.fillStyle='#fdf6ee';c.strokeStyle='#c0622e';c.lineWidth=1.5;c.beginPath();c.moveTo(38,12);c.lineTo(126,12);c.quadraticCurveTo(136,70,116,h-12);c.lineTo(76,h-12);c.lineTo(52,70);c.closePath();c.fill();c.stroke();c.fillStyle='#f0ebe2';c.strokeStyle='#1a1410';c.beginPath();c.moveTo(146,12);c.lineTo(234,12);c.lineTo(210,70);c.lineTo(190,h-12);c.lineTo(150,h-12);c.quadraticCurveTo(136,70,146,12);c.fill();c.stroke();c.strokeStyle='#e44';c.lineWidth=3;c.beginPath();c.moveTo(126,12);c.quadraticCurveTo(136,70,146,12);c.stroke();c.fillStyle='#1a1410';c.font='600 10px sans-serif';c.textAlign='center';c.fillText('kruisnaad (rood)',w/2,h-3);},
+    (c,w,h)=>{c.fillStyle='#fdf6ee';c.strokeStyle='#c0622e';c.lineWidth=1.5;c.beginPath();c.moveTo(46,12);c.lineTo(154,12);c.lineTo(166,66);c.lineTo(182,h-12);c.lineTo(152,h-12);c.lineTo(137,78);c.lineTo(122,h-12);c.lineTo(84,h-12);c.lineTo(69,78);c.lineTo(49,h-12);c.lineTo(24,h-12);c.lineTo(44,66);c.closePath();c.fill();c.stroke();c.strokeStyle='#e44';c.lineWidth=3;c.beginPath();c.moveTo(24,h-12);c.lineTo(69,78);c.lineTo(84,h-12);c.stroke();c.beginPath();c.moveTo(152,h-12);c.lineTo(137,78);c.lineTo(182,h-12);c.stroke();c.fillStyle='#1a1410';c.font='600 10px sans-serif';c.textAlign='center';c.fillText('binnenbeennaad (rood)',w/2,h-3);},
+    (c,w,h)=>{c.fillStyle='#fdf6ee';c.strokeStyle='#c0622e';c.lineWidth=1.5;c.beginPath();c.moveTo(42,50);c.lineTo(232,50);c.lineTo(216,h-12);c.lineTo(58,h-12);c.closePath();c.fill();c.stroke();c.fillStyle='#fff8ef';c.strokeStyle='#c0622e';c.lineWidth=1.5;c.beginPath();c.rect(42,18,190,28);c.fill();c.stroke();c.fillStyle='#1a1410';c.font='600 10px sans-serif';c.textAlign='center';c.fillText('Tailleband',137,36);['#7a8c6e','#c0622e','#1a1410'].forEach((col,i)=>{c.strokeStyle=col;c.lineWidth=2;c.beginPath();c.moveTo(82+i*55,50);c.lineTo(82+i*55,18);c.stroke();c.beginPath();c.arc(82+i*55,15,4,0,Math.PI*2);c.fillStyle=col;c.fill();});c.fillStyle='#1a1410';c.font='600 10px sans-serif';c.textAlign='center';c.fillText('tailleband aanzetten',w/2,h-3);},
+    (c,w,h)=>{c.fillStyle='#fdf6ee';c.strokeStyle='#c0622e';c.lineWidth=1.5;c.beginPath();c.rect(52,12,196,h-38);c.fill();c.stroke();c.fillStyle='#f0ebe2';c.strokeStyle='#1a1410';c.lineWidth=1.2;c.beginPath();c.rect(52,h-26,196,14);c.fill();c.stroke();c.strokeStyle='#7a8c6e';c.lineWidth=1.5;c.setLineDash([5,4]);c.beginPath();c.moveTo(56,h-29);c.lineTo(244,h-29);c.stroke();c.setLineDash([]);c.fillStyle='#1a1410';c.font='600 10px sans-serif';c.textAlign='center';c.fillText('zoom afwerken',w/2,h-3);}
+  ],
+  rok: [
+    (c,w,h)=>{[[30,10,160,10,175,h-14,15,h-14,'#fdf6ee','#c0622e','Voorpand'],[185,10,255,10,270,h-14,170,h-14,'#f0ebe2','#1a1410','Achterpand']].forEach(([x1,y1,x2,y2,x3,y3,x4,y4,f,s,lb])=>{c.fillStyle=f;c.strokeStyle=s;c.lineWidth=1.5;c.beginPath();c.moveTo(x1,y1);c.lineTo(x2,y2);c.lineTo(x3,y3);c.lineTo(x4,y4);c.closePath();c.fill();c.stroke();c.fillStyle='#1a1410';c.font='600 10px sans-serif';c.textAlign='center';c.fillText(lb,(x1+x3)/2,(y1+y3)/2);});c.font='20px sans-serif';c.textAlign='left';c.fillText('✂️',w-32,h/2+6);},
+    (c,w,h)=>{c.fillStyle='#fdf6ee';c.strokeStyle='#c0622e';c.lineWidth=1.5;c.beginPath();c.moveTo(40,10);c.lineTo(w-40,10);c.lineTo(w-24,h-14);c.lineTo(24,h-14);c.closePath();c.fill();c.stroke();c.strokeStyle='#e44';c.lineWidth=2;[[w/2-20,10,w/2-10,h*.4],[w/2+20,10,w/2+10,h*.4]].forEach(([x1,y1,x2,y2])=>{c.beginPath();c.moveTo(x1,y1);c.lineTo(x2,y2);c.stroke();});c.fillStyle='#1a1410';c.font='600 10px sans-serif';c.textAlign='center';c.fillText('nepen stikken (rood)',w/2,h-3);},
+    (c,w,h)=>{c.fillStyle='#f0ebe2';c.strokeStyle='#1a1410';c.lineWidth=1.5;c.beginPath();c.moveTo(60,10);c.lineTo(200,10);c.lineTo(216,h-14);c.lineTo(44,h-14);c.closePath();c.fill();c.stroke();c.fillStyle='#888';c.strokeStyle='#555';c.lineWidth=2;c.beginPath();c.rect(126,10,8,h*.55);c.fill();c.stroke();for(let y=14;y<h*.55;y+=10){c.fillStyle='#aaa';c.beginPath();c.rect(125,y,10,5);c.fill();}c.fillStyle='#1a1410';c.font='600 10px sans-serif';c.textAlign='center';c.fillText('rits inzetten (grijs)',w/2,h-3);},
+    (c,w,h)=>{[0,1].forEach(i=>{const ox=i?155:45,f=i?'#f0ebe2':'#fdf6ee',s=i?'#1a1410':'#c0622e';c.fillStyle=f;c.strokeStyle=s;c.lineWidth=1.5;c.beginPath();c.moveTo(ox,10);c.lineTo(ox+80,10);c.lineTo(ox+96,h-14);c.lineTo(ox-16,h-14);c.closePath();c.fill();c.stroke();c.strokeStyle='#e44';c.lineWidth=3;c.beginPath();c.moveTo(ox+80,10);c.lineTo(ox+96,h-14);c.stroke();});c.fillStyle='#c0622e';c.font='600 10px sans-serif';c.textAlign='center';c.fillText('zijnaden stikken (rood)',w/2,h-3);},
+    (c,w,h)=>{c.fillStyle='#fdf6ee';c.strokeStyle='#c0622e';c.lineWidth=1.5;c.beginPath();c.moveTo(40,50);c.lineTo(220,50);c.lineTo(230,h-14);c.lineTo(30,h-14);c.closePath();c.fill();c.stroke();c.fillStyle='#fff8ef';c.strokeStyle='#c0622e';c.lineWidth=1.5;c.beginPath();c.rect(40,18,180,28);c.fill();c.stroke();c.fillStyle='#1a1410';c.font='600 10px sans-serif';c.textAlign='center';c.fillText('Tailleband aanzetten',w/2,36);c.fillText('gespeld en vastnaaien',w/2,h-3);},
+    (c,w,h)=>{c.fillStyle='#fdf6ee';c.strokeStyle='#c0622e';c.lineWidth=1.5;c.beginPath();c.moveTo(30,12);c.lineTo(220,12);c.lineTo(240,h-26);c.lineTo(10,h-26);c.closePath();c.fill();c.stroke();c.fillStyle='#f0ebe2';c.strokeStyle='#1a1410';c.lineWidth=1.2;c.beginPath();c.rect(10,h-26,230,14);c.fill();c.stroke();c.strokeStyle='#7a8c6e';c.lineWidth=1.5;c.setLineDash([5,4]);c.beginPath();c.moveTo(14,h-29);c.lineTo(236,h-29);c.stroke();c.setLineDash([]);c.fillStyle='#1a1410';c.font='600 10px sans-serif';c.textAlign='center';c.fillText('zoom omvouwen en stikken',w/2,h-3);}
+  ],
+  shirt: [
+    (c,w,h)=>{[[38,10,138,10,138,h-14,38,h-14,'#fdf6ee','#c0622e','Voor/acht x2'],[155,10,255,10,255,h-14,155,h-14,'#ddd','#7a8c6e','Mouw x2']].forEach(([x1,y1,x2,y2,x3,y3,x4,y4,f,s,lb])=>{c.fillStyle=f;c.strokeStyle=s;c.lineWidth=1.5;c.beginPath();c.moveTo(x1,y1);c.lineTo(x2,y2);c.lineTo(x3,y3);c.lineTo(x4,y4);c.closePath();c.fill();c.stroke();c.fillStyle='#1a1410';c.font='600 9px sans-serif';c.textAlign='center';c.fillText(lb,(x1+x3)/2,(y1+y3)/2);});c.font='20px sans-serif';c.textAlign='left';c.fillText('✂️',w-28,h-24);},
+    (c,w,h)=>{c.fillStyle='#fdf6ee';c.strokeStyle='#c0622e';c.lineWidth=1.5;c.beginPath();c.rect(60,10,150,h*.6);c.fill();c.stroke();c.fillStyle='#f0ebe2';c.strokeStyle='#1a1410';c.beginPath();c.rect(60,10,150,22);c.fill();c.stroke();c.strokeStyle='#e44';c.lineWidth=3;c.beginPath();c.moveTo(60,32);c.lineTo(210,32);c.stroke();c.fillStyle='#1a1410';c.font='600 10px sans-serif';c.textAlign='center';c.fillText('schoudernaden (rood)',w/2,h-3);},
+    (c,w,h)=>{c.fillStyle='#fdf6ee';c.strokeStyle='#c0622e';c.lineWidth=1.5;c.beginPath();c.moveTo(60,h-14);c.lineTo(60,30);c.quadraticCurveTo(w/2,10,w-60,30);c.lineTo(w-60,h-14);c.closePath();c.fill();c.stroke();c.fillStyle='#e8f4ec';c.strokeStyle='#3a7a50';c.lineWidth=2;c.beginPath();c.moveTo(60,30);c.quadraticCurveTo(w/2,10,w-60,30);c.quadraticCurveTo(w/2,50,60,30);c.fill();c.stroke();c.fillStyle='#1a1410';c.font='600 10px sans-serif';c.textAlign='center';c.fillText('hals/kraag aanzetten',w/2,h-3);},
+    (c,w,h)=>{c.fillStyle='#fdf6ee';c.strokeStyle='#c0622e';c.lineWidth=1.5;c.beginPath();c.rect(80,10,100,h-20);c.fill();c.stroke();[[10,10,80,10,80,50,10,50],[190,10,260,10,260,50,190,50]].forEach(([x1,y1,x2,y2,x3,y3,x4,y4])=>{c.fillStyle='#ddd';c.strokeStyle='#7a8c6e';c.lineWidth=1.5;c.beginPath();c.moveTo(x1,y1);c.lineTo(x2,y2);c.lineTo(x3,y3);c.lineTo(x4,y4);c.closePath();c.fill();c.stroke();});c.strokeStyle='#e44';c.lineWidth=3;[[80,10,80,50],[190,10,190,50]].forEach(([x1,y1,x2,y2])=>{c.beginPath();c.moveTo(x1,y1);c.lineTo(x2,y2);c.stroke();});c.fillStyle='#1a1410';c.font='600 10px sans-serif';c.textAlign='center';c.fillText('mouwen inzetten (rood)',w/2,h-3);},
+    (c,w,h)=>{c.fillStyle='#fdf6ee';c.strokeStyle='#c0622e';c.lineWidth=1.5;c.beginPath();c.moveTo(80,10);c.lineTo(190,10);c.lineTo(240,h*.5);c.lineTo(220,h-14);c.lineTo(60,h-14);c.lineTo(40,h*.5);c.closePath();c.fill();c.stroke();c.strokeStyle='#e44';c.lineWidth=3;[[80,10,40,h*.5,60,h-14],[190,10,240,h*.5,220,h-14]].forEach(([x1,y1,x2,y2,x3,y3])=>{c.beginPath();c.moveTo(x1,y1);c.lineTo(x2,y2);c.lineTo(x3,y3);c.stroke();});c.fillStyle='#1a1410';c.font='600 10px sans-serif';c.textAlign='center';c.fillText('zijnaad + ondermoew (rood)',w/2,h-3);},
+    (c,w,h)=>{c.fillStyle='#fdf6ee';c.strokeStyle='#c0622e';c.lineWidth=1.5;c.beginPath();c.moveTo(80,10);c.lineTo(190,10);c.lineTo(225,h*.5);c.lineTo(205,h-26);c.lineTo(70,h-26);c.lineTo(50,h*.5);c.closePath();c.fill();c.stroke();c.fillStyle='#f0ebe2';c.strokeStyle='#1a1410';c.lineWidth=1.2;c.beginPath();c.rect(70,h-26,135,14);c.fill();c.stroke();c.strokeStyle='#7a8c6e';c.lineWidth=1.5;c.setLineDash([5,4]);c.beginPath();c.moveTo(72,h-29);c.lineTo(203,h-29);c.stroke();c.setLineDash([]);c.fillStyle='#1a1410';c.font='600 10px sans-serif';c.textAlign='center';c.fillText('zoom en mouwen afwerken',w/2,h-3);}
+  ],
+  jurk: [
+    (c,w,h)=>{[[28,10,118,10,118,h*.45,28,h*.45,'#fdf6ee','#c0622e','Lijfje voor'],[135,10,225,10,225,h*.45,135,h*.45,'#f0ebe2','#1a1410','Lijfje rug'],[28,h*.52,118,h*.52,133,h-10,13,h-10,'#fdf6ee','#c0622e','Rok voor'],[138,h*.52,228,h*.52,243,h-10,123,h-10,'#f0ebe2','#1a1410','Rok rug']].forEach(([x1,y1,x2,y2,x3,y3,x4,y4,f,s,lb])=>{c.fillStyle=f;c.strokeStyle=s;c.lineWidth=1.5;c.beginPath();c.moveTo(x1,y1);c.lineTo(x2,y2);c.lineTo(x3,y3);c.lineTo(x4,y4);c.closePath();c.fill();c.stroke();c.fillStyle='#1a1410';c.font='600 9px sans-serif';c.textAlign='center';c.fillText(lb,(x1+x3)/2,(y1+y3)/2);});c.font='18px sans-serif';c.textAlign='left';c.fillText('✂️',w-28,h/2);},
+    (c,w,h)=>{c.fillStyle='#fdf6ee';c.strokeStyle='#c0622e';c.lineWidth=1.5;c.beginPath();c.rect(60,10,150,h*.6);c.fill();c.stroke();c.fillStyle='#f0ebe2';c.strokeStyle='#1a1410';c.beginPath();c.rect(60,10,150,22);c.fill();c.stroke();c.strokeStyle='#e44';c.lineWidth=3;c.beginPath();c.moveTo(60,32);c.lineTo(210,32);c.stroke();c.fillStyle='#1a1410';c.font='600 10px sans-serif';c.textAlign='center';c.fillText('schoudernaden lijfje (rood)',w/2,h-3);},
+    (c,w,h)=>{c.fillStyle='#f0ebe2';c.strokeStyle='#1a1410';c.lineWidth=1.5;c.beginPath();c.rect(50,10,200,h-24);c.fill();c.stroke();c.fillStyle='#888';c.strokeStyle='#555';c.lineWidth=2;c.beginPath();c.rect(146,10,8,h*.5);c.fill();c.stroke();c.strokeStyle='#e44';c.lineWidth=3;[[50,10,50,h-24],[250,10,250,h-24]].forEach(([x1,y1,x2,y2])=>{c.beginPath();c.moveTo(x1,y1);c.lineTo(x2,y2);c.stroke();});c.fillStyle='#1a1410';c.font='600 10px sans-serif';c.textAlign='center';c.fillText('rits lijfje + zijnaden (rood)',w/2,h-3);},
+    (c,w,h)=>{[0,1].forEach(i=>{const ox=i?155:45;c.fillStyle=i?'#f0ebe2':'#fdf6ee';c.strokeStyle=i?'#1a1410':'#c0622e';c.lineWidth=1.5;c.beginPath();c.moveTo(ox,10);c.lineTo(ox+80,10);c.lineTo(ox+96,h-14);c.lineTo(ox-16,h-14);c.closePath();c.fill();c.stroke();c.strokeStyle='#e44';c.lineWidth=3;c.beginPath();c.moveTo(ox+80,10);c.lineTo(ox+96,h-14);c.stroke();});c.fillStyle='#c0622e';c.font='600 10px sans-serif';c.textAlign='center';c.fillText('zijnaden rok (rood)',w/2,h-3);},
+    (c,w,h)=>{c.fillStyle='#fdf6ee';c.strokeStyle='#c0622e';c.lineWidth=1.5;c.beginPath();c.rect(40,10,190,h*.38);c.fill();c.stroke();c.fillStyle='#f0f0f8';c.strokeStyle='#7a8c6e';c.lineWidth=1.5;c.beginPath();c.moveTo(28,h*.44);c.lineTo(202,h*.44);c.lineTo(220,h-14);c.lineTo(10,h-14);c.closePath();c.fill();c.stroke();c.strokeStyle='#e44';c.lineWidth=3;c.beginPath();c.moveTo(40,h*.44);c.lineTo(230,h*.44);c.stroke();c.fillStyle='#1a1410';c.font='600 10px sans-serif';c.textAlign='center';c.fillText('taillenaad samenvoegen (rood)',w/2,h-3);},
+    (c,w,h)=>{c.fillStyle='#fdf6ee';c.strokeStyle='#c0622e';c.lineWidth=1.5;c.beginPath();c.moveTo(70,12);c.lineTo(w-70,12);c.quadraticCurveTo(w/2,36,70,12);c.moveTo(50,12);c.lineTo(w-50,12);c.beginPath();c.moveTo(50,12);c.lineTo(30,h*.5);c.lineTo(20,h-26);c.lineTo(w-20,h-26);c.lineTo(w-30,h*.5);c.lineTo(w-50,12);c.quadraticCurveTo(w/2,36,50,12);c.fill();c.stroke();c.fillStyle='#f0ebe2';c.strokeStyle='#1a1410';c.lineWidth=1.2;c.beginPath();c.rect(20,h-26,w-40,14);c.fill();c.stroke();c.fillStyle='#1a1410';c.font='600 10px sans-serif';c.textAlign='center';c.fillText('hals en zoom afwerken',w/2,h-3);}
+  ]
+};
+
+const DEFAULT_STEPS = {
+  broek:[
+    {title:'Stof voorbereiden en snijden',desc:'Was en strijk de stof. Leg dubbel, goede kanten op elkaar. Leg de patroondelen langs de schietlooddraad en speld vast. Knip: voorpand x 2, achterpand x 2, tailleband x 1.',tip:'Knip naadtoeslag 1.5cm aan naden, 3cm aan de zoom.'},
+    {title:'Zijnaden stikken',desc:'Stik de zijnaden van voor- en achterpand rechts op rechts. Begin bij de taillelijn en werk naar beneden. Pers de naden open.',tip:'Pers elke naad direct na het stikken.'},
+    {title:'Kruisnaad stikken',desc:'Leg de twee pijpen rechts op rechts. Stik de voorste kruisnaad, daarna de achterste. Knip inkepingen in de kruisbolling.',tip:'Versterk de kruisnaad met een tweede rij steken.'},
+    {title:'Binnenbeennaad sluiten',desc:'Draai een pijp binnenste buiten, schuif in de andere zodat goede kanten op elkaar liggen. Stik de binnenbeennaad in een keer van enkel tot enkel.',tip:'Deze volgorde geeft de mooiste kruisrondinge.'},
+    {title:'Tailleband aanzetten',desc:'Pers de tailleband dubbel. Speld rechts op rechts aan de broek. Stik vast, sla om naar binnenkant en stik door. Zet de rits aan voor je de band sluit.',tip:'Controleer de pasvorm van de tailleband voor je definitief stikt.'},
+    {title:'Zoom afwerken',desc:'Vouw de zoom naar binnen en stik vast met een blindzoomsteek. Strijk goed na. De broek is klaar!',tip:'Pas de broek aan voor je de zoom stikt.'}
+  ],
+  rok:[
+    {title:'Stof snijden',desc:'Leg stof dubbel, goede kanten op elkaar. Knip: voorpand x 1, achterpand x 1, tailleband x 1.',tip:'Markeer de taillelijn met krijt of inrijgdraad.'},
+    {title:'Nepen stikken',desc:'Stik de nepen aan voor- en achterpand op de taillelijn. Pers de nepen naar het midden.',tip:'Stik nepen altijd van breed naar smal.'},
+    {title:'Rits aanzetten',desc:'Stik de middenachternaad tot het ritseinde. Zet de rits in met een ritsvoet. Stik de rest van de middenachternaad.',tip:'Gebruik een onzichtbare rits voor een nette afwerking.'},
+    {title:'Zijnaden stikken',desc:'Stik de zijnaden rechts op rechts. Pers de naden open. Werk de naden af.',tip:'Zijnaad iets schuin inknijpen bij de heup voor een mooiere lijn.'},
+    {title:'Tailleband aanzetten',desc:'Pers de tailleband dubbel. Speld rechts op rechts aan de rok. Stik vast, sla om naar binnenkant en stik door.',tip:'Verstevig de tailleband met tussenvoering.'},
+    {title:'Zoom afwerken',desc:'Vouw de zoom naar binnen en stik vast met een blindzoomsteek. Strijk goed na. De rok is klaar!',tip:'Hang de rok een nacht op hanger voor je de zoom stikt.'}
+  ],
+  shirt:[
+    {title:'Stof snijden',desc:'Knip: voorpand x 1 (op vouw), achterpand x 1 (op vouw), mouw x 2.',tip:'Stof op vouw leggen geeft een symmetrisch resultaat.'},
+    {title:'Schoudernaden stikken',desc:'Leg voor- en achterpand rechts op rechts. Stik de schoudernaden. Pers open.',tip:'Versterk schoudernaden met een smalle strook tussenvoering.'},
+    {title:'Halsopening verwerken',desc:'Knip halsboord op maat en naai tot een ring. Verdeel in 4 punten en stik vast met een rekbare steek.',tip:'Verdeel de halsopening in 4 gelijke delen voor een gelijkmatige boord.'},
+    {title:'Mouwen inzetten',desc:'Stik het hoofd van de mouw aan het armsgat, rechts op rechts. Begin bij de schoudernaad.',tip:'Stik de mouw met de mouwkant naar boven voor meer controle.'},
+    {title:'Zijnaden en ondermouwen sluiten',desc:'Stik de zijnaad en ondermoewnaad in een keer door van zoom tot mouwrand.',tip:'Dit is de meest efficienten volgorde.'},
+    {title:'Zoom en mouwen afwerken',desc:'Vouw de zoom en mouwranden naar binnen. Stik vast. Strijk het geheel na. Klaar!',tip:'Jersey zoom: coversteek of dubbelnaald geeft de mooiste afwerking.'}
+  ],
+  jurk:[
+    {title:'Stof snijden',desc:'Knip: lijfje voorpand x 1, lijfje achterpand x 1, rok voorpand x 1, rok achterpand x 1.',tip:'Markeer de taillenaad met inrijgdraad op beide stukken.'},
+    {title:'Schoudernaden lijfje stikken',desc:'Stik de schoudernaden van lijfje voor- en achterpand. Pers open.',tip:'Versterk schoudernaden met tussenvoering.'},
+    {title:'Rits en zijnaden lijfje',desc:'Zet de rits in de middenachternaad van het lijfje. Stik daarna de zijnaden.',tip:'Gebruik een onzichtbare rits voor een nette afwerking.'},
+    {title:'Rok naden stikken',desc:'Stik de zijnaden van de rok. Stik ook de middenachternaad tot het ritseinde.',tip:'Pers de naden altijd open voor een plat resultaat.'},
+    {title:'Lijfje en rok samenvoegen',desc:'Leg lijfje en rok rechts op rechts op de taillenaad. Speld en stik de taillenaad rondom.',tip:'Stik twee keer over de taillenaad - dit is een belaste naad.'},
+    {title:'Hals en zoom afwerken',desc:'Verwerk de halsopening met biaisband of beleg. Stik de zoom van de rok. Strijk de jurk. Klaar!',tip:'Hang de jurk een nacht op - de zoom valt dan gelijkmatiger.'}
+  ]
+};
+
+async function buildSteps() {
+  document.getElementById('emptySteps').classList.add('hidden');
+  document.getElementById('stepsResult').classList.remove('hidden');
+  const g = currentGarment;
+  const name = SHIRT_LABEL[g] || g.charAt(0).toUpperCase()+g.slice(1);
+  const drawKey = ['tshirt','polo','blouse','trui','vest'].includes(g) ? 'shirt' : g==='rok' ? 'rok' : g==='jurk' ? 'jurk' : 'broek';
+  const draws = STEP_DRAWS[drawKey];
+  const defaults = DEFAULT_STEPS[drawKey];
+
+  // Get sluiting
+  const slMap = {broek:'sl-broek',rok:'sl-rok',tshirt:'sl-shirt',polo:'sl-shirt',blouse:'sl-shirt',trui:'sl-shirt',vest:'sl-shirt',jurk:'sl-jurk'};
+  const sluiting = getPill(slMap[g]) || 'standaard sluiting';
+
+  document.getElementById('stepsIntro').textContent = 'Stappenplan voor ' + name + ' — sluiting: ' + sluiting + (patternRef ? ' — basis: ' + patternRef.naam : '');
+  const list = document.getElementById('stepsList');
+  list.innerHTML = '<div class="step-loading"><span class="spin dark"></span> AI maakt gedetailleerde stappen…</div>';
+
+  let steps = null;
+  if (getKey()) {
+    try {
+      const sa = SA();
+      const refInfo = patternRef ? '\n- Basispatroon: ' + patternRef.naam + (patternRef.stijl ? ' (' + patternRef.stijl + ')' : '') + (patternRef.beschrijving ? '\n- Patroonbeschrijving: ' + patternRef.beschrijving : '') : '';
+      const prompt = 'Maak een gedetailleerd stappenplan voor het naaien van een ' + name + '.\n\nDetails:\n- Sluiting: ' + sluiting + '\n- Naadtoeslag: ' + sa + 'cm' + refInfo + '\n\nGeef exact ' + defaults.length + ' stappen. Per stap minimaal 4 zinnen met: exacte handelingen, stiklengte in mm, hoe vast te spelden, wat mis kan gaan. Wees HEEL specifiek over de sluiting: ' + sluiting + '.' + (patternRef ? ' Houd rekening met de stijl en details van het basispatroon ' + patternRef.naam + '.' : '') + '\n\nJSON zonder markdown:\n[{"title":"...","desc":"...","tip":"..."}, ...]';
+      const raw = await callAI([{role:'user', content:prompt}]);
+      if (raw) {
+        const parsed = JSON.parse(raw.replace(/```json|```/g,'').trim());
+        if (Array.isArray(parsed) && parsed.length >= defaults.length - 1) steps = parsed;
+      }
+    } catch(e) { console.warn('AI stappen:', e.message); }
+  }
+
+  const final = steps || defaults;
+  document.getElementById('stepsIntro').textContent = 'Stappenplan voor ' + name + ' — sluiting: ' + sluiting + (patternRef ? ' — basis: ' + patternRef.naam : '') + (steps ? ' (AI-gegenereerd)' : '');
+  list.innerHTML = '';
+  final.forEach((step, i) => {
+    const card = document.createElement('div'); card.className = 'step';
+    const cv2 = document.createElement('canvas');
+    const W=300, H=138, dpr=Math.min(window.devicePixelRatio||1,2);
+    cv2.width=W*dpr; cv2.height=H*dpr; cv2.style.width='100%'; cv2.style.height=H+'px';
+    const ctx2=cv2.getContext('2d'); ctx2.scale(dpr,dpr);
+    ctx2.fillStyle='#f8f4ee'; ctx2.fillRect(0,0,W,H);
+    const drawFn = draws[i] || draws[draws.length-1];
+    drawFn(ctx2, W, H);
+    card.appendChild(cv2);
+    card.insertAdjacentHTML('beforeend',
+      '<div class="step-body"><div class="step-num">Stap '+(i+1)+'</div><div class="step-title">'+step.title+'</div><div class="step-desc">'+step.desc+'</div><div class="step-tip">&#x1F4A1; '+step.tip+'</div></div>'
+    );
+    list.appendChild(card);
+  });
+}
+
+// ─── Print & Export ──────────────────────────────────────
+function printTiled(size) {
+  const cv = document.getElementById('pat');
+  if (!cv.width) { toast('Genereer eerst een patroon'); return; }
+  const dpr = Math.min(window.devicePixelRatio||1,2);
+  const logW = cv.width/dpr, logH = cv.height/dpr;
+  const patW = logW/4*10, patH = logH/4*10; // mm
+  const pg = size==='A3' ? {w:297,h:420} : {w:210,h:297};
+  const margin=10, overlap=10, useW=pg.w-2*margin, useH=pg.h-2*margin;
+  const cols=Math.ceil(patW/(useW-overlap)), rows=Math.ceil(patH/(useH-overlap));
+  const img = cv.toDataURL('image/png');
+  let tiles='';
+  for(let r=0;r<rows;r++) for(let c=0;c<cols;c++) {
+    const ox=c*(useW-overlap), oy=r*(useH-overlap);
+    tiles+='<div class="tile'+(r===rows-1&&c===cols-1?' last':'')+'"><div class="ti">Pagina '+(r*cols+c+1)+'/'+rows*cols+' | rij '+(r+1)+'/'+rows+' kolom '+(c+1)+'/'+cols+' | '+size+'</div><div class="tf"><img src="'+img+'" style="position:absolute;width:'+patW+'mm;height:'+patH+'mm;left:'+-ox+'mm;top:'+-oy+'mm"><div class="ov-v"></div><div class="ov-h"></div></div></div>';
+  }
+  const win=window.open('','_blank');
+  if(!win){toast('Pop-up geblokkeerd');return;}
+  win.document.write('<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Patroon '+size+'</title><style>*{box-sizing:border-box;margin:0;padding:0}@page{size:'+pg.w+'mm '+pg.h+'mm;margin:'+margin+'mm}body{font-family:sans-serif}.tile{width:'+useW+'mm;height:'+useH+'mm;page-break-after:always;display:flex;flex-direction:column}.tile.last{page-break-after:auto}.ti{font-size:7pt;color:#999;padding:1mm 0;flex-shrink:0}.tf{flex:1;overflow:hidden;position:relative;border:0.2mm solid #eee}.ov-v{position:absolute;left:'+overlap+'mm;top:0;bottom:0;width:0;border-left:0.5mm dashed #aaa}.ov-h{position:absolute;top:'+overlap+'mm;left:0;right:0;height:0;border-top:0.5mm dashed #aaa}@media screen{body{padding:10px;background:#f0f0f0}.tile{background:#fff;box-shadow:0 2px 8px rgba(0,0,0,.15);margin:10px auto}}</style></head><body>'+tiles+'<script>window.addEventListener("load",function(){setTimeout(function(){window.print()},400)})<\/script></body></html>');
+  win.document.close();
+}
+
+function exportPNG() {
+  const cv=document.getElementById('pat');
+  if(!cv.width){toast('Genereer eerst een patroon');return;}
+  const a=document.createElement('a'); a.href=cv.toDataURL('image/png'); a.download='patroon-'+currentGarment+'.png'; a.click();
+  toast('PNG opgeslagen!');
+}
+
+async function exportPDF() {
+  const cv=document.getElementById('pat');
+  if(!cv.width){toast('Genereer eerst een patroon');return;}
+  if(typeof window.jspdf==='undefined'){toast('PDF library laadt nog, probeer opnieuw');return;}
+  toast('PDF wordt aangemaakt…');
+  const dpr=Math.min(window.devicePixelRatio||1,2);
+  const W=cv.width/dpr/4*10, H=cv.height/dpr/4*10;
+  const {jsPDF}=window.jspdf;
+  const pdf=new jsPDF({orientation:W>H?'landscape':'portrait',unit:'mm',format:[W,H]});
+  pdf.addImage(cv.toDataURL('image/png'),'PNG',0,0,W,H);
+  pdf.setFontSize(8); pdf.setTextColor(150);
+  pdf.text('Patroon Studio | '+currentGarment+(patternRef?' | Basis: '+patternRef.naam:'')+' | Schaal 1:1 | Kalibratiebalk = 10cm',5,H-3);
+  pdf.save('patroon-'+currentGarment+(patternRef?'-'+patternRef.naam.replace(/\s+/g,'-'):'')+'.pdf');
+  toast('PDF opgeslagen!');
+}
+
+// ─── Toast ───────────────────────────────────────────────
+function toast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2600);
+}
+
+// ─── App icon (favicon + apple-touch-icon) ───────────────
+function createIcons() {
+  try {
+    const S=180, cv=document.createElement('canvas');
+    cv.width=S; cv.height=S;
+    const ctx=cv.getContext('2d');
+    ctx.beginPath();
+    const r=36;
+    ctx.moveTo(r,0);ctx.lineTo(S-r,0);ctx.quadraticCurveTo(S,0,S,r);
+    ctx.lineTo(S,S-r);ctx.quadraticCurveTo(S,S,S-r,S);
+    ctx.lineTo(r,S);ctx.quadraticCurveTo(0,S,0,S-r);
+    ctx.lineTo(0,r);ctx.quadraticCurveTo(0,0,r,0);
+    ctx.closePath(); ctx.fillStyle='#1a1410'; ctx.fill();
+    ctx.save(); ctx.translate(S/2,S/2-10); const sc=1.5;
+    ctx.strokeStyle='#f5f0e8'; ctx.lineWidth=7*sc; ctx.lineCap='round';
+    ctx.beginPath();ctx.moveTo(-30*sc,-18*sc);ctx.quadraticCurveTo(0,-4*sc,30*sc,14*sc);ctx.stroke();
+    ctx.beginPath();ctx.moveTo(-30*sc,18*sc);ctx.quadraticCurveTo(0,4*sc,30*sc,-14*sc);ctx.stroke();
+    ctx.beginPath();ctx.arc(0,0,7*sc,0,Math.PI*2);ctx.fillStyle='#c0622e';ctx.fill();ctx.strokeStyle='#f5f0e8';ctx.lineWidth=3;ctx.stroke();
+    ctx.beginPath();ctx.arc(-38*sc,-24*sc,10*sc,0,Math.PI*2);ctx.strokeStyle='#f5f0e8';ctx.lineWidth=5*sc;ctx.stroke();
+    ctx.beginPath();ctx.arc(-38*sc,24*sc,10*sc,0,Math.PI*2);ctx.stroke();
+    ctx.restore();
+    ctx.font='bold 20px -apple-system,sans-serif';ctx.fillStyle='#c0622e';ctx.textAlign='center';ctx.fillText('PATROON STUDIO',S/2,S-18);
+    const png=cv.toDataURL('image/png');
+    const atl=document.createElement('link'); atl.rel='apple-touch-icon'; atl.href=png; document.head.appendChild(atl);
+    const fav=document.createElement('link'); fav.rel='icon'; fav.type='image/png'; fav.href=png; document.head.appendChild(fav);
+  } catch(e) { console.warn('Icon generation failed:', e); }
+}
+document.addEventListener('DOMContentLoaded', createIcons);
+</script>
+</body>
+</html>
