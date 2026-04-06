@@ -661,7 +661,11 @@ async function lookupPnr() {
     const r = await callJSON('Info over naaipatroon "'+val+'". Geef het kledingstuktype (broek/rok/tshirt/polo/blouse/trui/vest/jurk). '+styleGuide+'\n\nJSON zonder markdown:\n{"naam":"volledige naam","merk":"merknaam","type":"een van: broek/rok/tshirt/polo/blouse/trui/vest/jurk","stijl":"max 5 woorden","moeilijkheid":"Beginner/Gevorderd/Expert","stijl_velden":{"veldnaam":"waarde"},"aanpassingen":["aanpassing 1","aanpassing 2"]}');
     if (!r) return;
     const GNAMES = {broek:'Broek',rok:'Rok',tshirt:'T-shirt',polo:'Polo',blouse:'Blouse',trui:'Trui',vest:'Vest',jurk:'Jurk'};
-    const garmentType = r.type && GARMENT_GROUP[r.type] ? r.type : null;
+    // Normalize AI type — may return English or variations
+    const TYPE_ALIAS = {dress:'jurk',skirt:'rok',pants:'broek',trousers:'broek',shirt:'tshirt','t-shirt':'tshirt',bloes:'blouse',sweater:'trui',jacket:'vest',coat:'vest',top:'tshirt',gown:'jurk',tunic:'jurk',tuniek:'jurk'};
+    const rawType = (r.type||'').toLowerCase().trim();
+    const normalizedType = GARMENT_GROUP[rawType] ? rawType : TYPE_ALIAS[rawType] || null;
+    const garmentType = normalizedType && GARMENT_GROUP[normalizedType] ? normalizedType : null;
     // Short verification text
     document.getElementById('pnrTxt').innerHTML = '<strong>'+(r.naam||val)+'</strong>'+(r.merk?' — '+r.merk:'')+(garmentType?' · '+GNAMES[garmentType]:'')+(r.stijl?' · '+r.stijl:'')+(r.moeilijkheid?' · ⭐ '+r.moeilijkheid:'');
     const chips = document.getElementById('pnrChips'); chips.innerHTML='';
